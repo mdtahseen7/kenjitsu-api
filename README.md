@@ -17,3 +17,12 @@ especially one piece and bleach ,naruto
 
 
   /// do a max page , 40 for anilist  and max pages for jikan is 25 input validation 
+
+
+  /// normalize the duborsub
+
+  //decode uri component
+  // remember to set url for redis host env 
+
+  stale revalidation
+  redis storing error data 

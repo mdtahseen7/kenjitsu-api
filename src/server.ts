@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import MetaRoutes from './routes/meta/index.js';
+import AnimeRoutes from './routes/anime/index.js';
 
 const fastify = Fastify({
   logger: {
@@ -17,7 +18,15 @@ const fastify = Fastify({
   disableRequestLogging: true, // This stops Fastify from logging incoming requests
 });
 
-// Extend FastifyRequest to include `startTime`
+//
+fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
+  reply.status(200).send({ message: 'Avalaible routes are /anime & /meta' }); // remeber to add html picture for the root api
+});
+//api/meta route
+fastify.register(MetaRoutes, { prefix: 'api/meta' });
+//api/anime route
+fastify.register(AnimeRoutes, { prefix: '/api/anime' });
+
 declare module 'fastify' {
   interface FastifyRequest {
     startTime?: [number, number];
@@ -42,14 +51,6 @@ fastify.addHook('onResponse', (request: FastifyRequest, reply: FastifyReply, don
   done();
 });
 
-fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-  reply.status(200).send({ message: 'Avalaible routes are /anime & /meta' }); // remeber to add html picture for the root api
-});
-
-//api/meta route
-fastify.register(MetaRoutes, { prefix: 'api/meta' });
-
-//function to start the server
 const start = async () => {
   try {
     const port = parseInt(process.env.PORT || '3000', 10);

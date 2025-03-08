@@ -1,5 +1,3 @@
-import { error } from 'console';
-
 const Format = {
   TV: 'TV',
   MOVIE: 'MOVIE',
@@ -13,11 +11,10 @@ type Format = (typeof Format)[keyof typeof Format];
 
 // Function to normalize and validate the input
 export function toFormatAnilist(input: string): Format {
-  //check for undefined
   if (!input) {
     input = Format.TV;
   }
-  // Normalize the input to uppercase
+
   const upperCaseInput = input.toUpperCase();
 
   // Check if the normalized input is a valid Format
@@ -25,24 +22,27 @@ export function toFormatAnilist(input: string): Format {
     return upperCaseInput as Format;
   }
 
-  const validFormats = Object.values(Format).join(', ');
-  throw new Error(`Invalid input: "${input}". Required inputs are: ${validFormats}`);
+  const validFormats = Object.values(Format).join(' or ');
+  throw new Error(`Invalid input: ${input}. Required inputs are: ${validFormats}`);
 }
-export function toFormatJikan(input: string): Format {
-  //check for undefined
+export const AnimeProvider = {
+  HiAnime: 'hianime',
+  Animekai: 'animekai',
+};
+export type AnimeProvider = (typeof AnimeProvider)[keyof typeof AnimeProvider];
+export function toProvider(input: string): AnimeProvider {
   if (!input) {
-    input = Format.TV;
+    input = AnimeProvider.HiAnime;
   }
-  // Normalize the input tolowercase
+
   const lowerCaseInput = input.toLowerCase();
 
-  // Check if the normalized input is a valid Format
-  if (Object.values(Format).includes(lowerCaseInput as Format)) {
-    return lowerCaseInput as Format;
+  if (Object.values(AnimeProvider).includes(lowerCaseInput as AnimeProvider)) {
+    return lowerCaseInput as AnimeProvider;
   }
 
-  const validFormats = Object.values(Format).join(', ');
-  throw new Error(`Invalid input: "${input}". Required inputs are: ${validFormats}`);
+  const validAnimeProvider = Object.values(AnimeProvider).join(' or ');
+  throw new Error(`Invalid input: ${input} .Required inputs are: ${validAnimeProvider}`);
 }
 
 const Seasons = {
@@ -54,42 +54,54 @@ const Seasons = {
 type Seasons = (typeof Seasons)[keyof typeof Seasons];
 
 export function toAnilistSeasons(input: string): Seasons {
-  //check for undefined
-  const validSeason = Object.values(Seasons).join(', ');
+  const validSeason = Object.values(Seasons).join(' or ');
   if (!input) {
-    throw new Error(`Missing paramaters. Required paramaters are: ${validSeason}`);
+    throw new Error(`Missing paramater. Pick a required paramater: ${validSeason}`);
   }
-  // Normalize the input toupperCase
+
   const upperCaseInput = input.toUpperCase();
 
-  // Check if the normalized input is a valid Format
   if (Object.values(Seasons).includes(upperCaseInput as Seasons)) {
     return upperCaseInput as Seasons;
   }
 
-  throw new Error(`Invalid input: "${input}". Required inputs are: ${validSeason}`);
+  throw new Error(`Invalid input: ${input}. Required inputs are: ${validSeason}`);
 }
 
-// const SubOrDub = {
-//   SUB: 'sub',
-//   DUB: 'dub',
-// } as const;
-// type SubOrDub = (typeof SubOrDub)[keyof typeof SubOrDub];
+const SubOrDub = {
+  SUB: 'sub',
+  DUB: 'dub',
+} as const;
+type SubOrDub = (typeof SubOrDub)[keyof typeof SubOrDub];
 
-// export function toCategory(input: string): SubOrDub {
-//   //check for undefined
-//   if (!input) {
-//     input = SubOrDub.SUB;
-//   }
-//   // Normalize the input to lowercase
-//   const lowerCaseInput = input.toLowerCase();
+export function toCategory(input: string): SubOrDub {
+  const validInputs = Object.values(SubOrDub).join(' or ');
+  if (!input) {
+    input = SubOrDub.SUB;
+  }
+  const lowerCaseInput = input.toLowerCase();
+  if (Object.values(SubOrDub).includes(lowerCaseInput as SubOrDub)) {
+    return lowerCaseInput as SubOrDub;
+  }
 
-//   // Check if the normalized input is a valid Format
-//   if (Object.values(SubOrDub).includes(lowerCaseInput as SubOrDub)) {
-//     return lowerCaseInput as SubOrDub;
-//   }
+  throw new Error(`Invalid input: ${input}. Required inputs are: ${validInputs}`);
+}
 
-//   // If invalid, throw an error with the required inputs
-//   const validInputs = Object.values(SubOrDub).join(', ');
-//   throw new Error(`Invalid input: "${input}". Required inputs are: ${validInputs}`);
-// }
+const ZoroServers = {
+  HD1: 'hd-1',
+  HD2: 'hd-2',
+} as const;
+type ZoroServers = (typeof ZoroServers)[keyof typeof ZoroServers];
+
+export function toZoroServers(input: string): ZoroServers {
+  const validInputs = Object.values(ZoroServers).join(' or ');
+  if (!input) {
+    input = ZoroServers.HD1;
+  }
+  const lowerCaseInput = input.toLowerCase();
+  if (Object.values(ZoroServers).includes(lowerCaseInput as ZoroServers)) {
+    return lowerCaseInput as ZoroServers;
+  }
+
+  throw new Error(`Invalid input: ${input}. Required inputs are: ${validInputs}`);
+}
