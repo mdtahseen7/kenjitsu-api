@@ -1,12 +1,16 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { Anilist, AnimeProvider, Format, Seasons } from 'hakai-extensions';
+import { Anilist, AnimeProvider } from 'hakai-extensions';
 import { toAnilistSeasons, toFormatAnilist, toProvider } from '../../utils/normalize.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 import { FastifyParams, FastifyQuery } from '../../utils/types.js';
+import { ratelimitPlugin, ratelimitOptions } from '../../config/ratelimit.js';
 
 const anilist = new Anilist();
 
 export default async function AnilistRoutes(fastify: FastifyInstance) {
+  await fastify.register(ratelimitPlugin, {
+    ...ratelimitOptions,
+  });
   // api/meta/anilist
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({ message: 'Welcome to Anilist Metadata provider' });
@@ -14,7 +18,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
   // api/meta/anilist?q=yoursearchquery&page=number&perpage=number
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const q = request.query.q as string;
+    const q = String(request.query.q);
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 50);
@@ -62,12 +66,12 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
   // api/meta/anilist/most-popular?format=string&page=number&perPage=number
   fastify.get('/most-popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const format = (request.query.format as Format) || 'TV';
+    const format = request.query.format || 'TV';
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 50);
 
-    const newformat = toFormatAnilist(format) || 'TV';
+    const newformat = toFormatAnilist(format);
 
     const cacheKey = `anilist-most-popular-${page}-${perPage}-${newformat}`;
     const cachedData = await redisGetCache(cacheKey);
@@ -83,12 +87,12 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
   // api/meta/anilist/top-anime?format=string&page=number&perPage=number
   fastify.get('/top-anime', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const format = (request.query.format as Format) || 'TV';
+    const format = request.query.format || 'TV';
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 50);
 
-    const newformat = toFormatAnilist(format) || 'TV';
+    const newformat = toFormatAnilist(format);
 
     const cacheKey = `anilist-top-anime-${page}-${perPage}-${newformat}`;
     const cachedData = await redisGetCache(cacheKey);
@@ -159,9 +163,9 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/seasons/:season/:year',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      const season = request.params.season as Seasons;
+      const season = String(request.params.season);
       const year = Number(request.params.year);
-      const format = (request.query.format as Format) || 'TV';
+      const format = request.query.format || 'TV';
       const page = Number(request.query.page) || 1;
       let perPage = Number(request.query.perPage) || 20;
       perPage = Math.min(perPage, 50);
@@ -181,7 +185,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       const anilistId = Number(request.params.anilistId);
       const provider = request.query.provider || 'hianime';
-      const newprovider = (toProvider(provider) as AnimeProvider) || 'hianime';
+
+      const newprovider = toProvider(provider) as AnimeProvider;
 
       const cacheKey = `anilist-provider-id-${anilistId}-${newprovider}`;
 
@@ -207,7 +212,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       const anilistId = Number(request.params.anilistId);
       const provider = request.query.provider || 'hianime';
-      const newprovider = (toProvider(provider) as AnimeProvider) || 'hianime';
+
+      const newprovider = toProvider(provider) as AnimeProvider;
 
       const cacheKey = `anilist-provider-episodes-${anilistId}-${newprovider}`;
 

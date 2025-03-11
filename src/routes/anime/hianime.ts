@@ -1,10 +1,16 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { HiAnime, HiAnimeServers, SubOrDub } from 'hakai-extensions';
+import { HiAnime } from 'hakai-extensions';
 import { toZoroServers, toCategory } from '../../utils/normalize.js';
+import { FastifyParams, FastifyQuery } from '../../utils/types.js';
+import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
+import { ratelimitOptions, ratelimitPlugin } from '../../config/ratelimit.js';
 
 const zoro = new HiAnime();
 
 export default async function HianimeRoutes(fastify: FastifyInstance) {
+  await fastify.register(ratelimitPlugin, {
+    ...ratelimitOptions,
+  });
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({
       message: 'Welcome to Hianime Provider',
@@ -12,43 +18,63 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
   });
 
   //api/anime/hianime/search?q=''&page=number
-  fastify.get('/search', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { q } = request.query as { q: string };
-    const { page } = request.query as { page: number };
+  fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    const q = String(request.query.q) as string;
+    const page = Number(request.query.page) || 1;
+
     const data = await zoro.search(q, page);
     return reply.send({ data });
   });
 
-  //api/anime/hianime/info/:id
-  fastify.get('/info/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const data = await zoro.fetchInfo(id);
+  //api/anime/hianime/info/:animeId
+  fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    const animeId = String(request.params.animeId);
+
+    const data = await zoro.fetchInfo(animeId);
+
     return reply.send({ data });
   });
 
   //api/anime/hianime/episodes/:id
-  fastify.get('/episodes/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const data = await zoro.fetchEpisodes(id);
+  fastify.get('/episodes/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    const animeId = String(request.params.animeId);
+    const data = await zoro.fetchEpisodes(animeId);
+
     return reply.send({ data });
   });
 
-  //api/anime/hianime/servers/:id
-  fastify.get('/servers/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const data = await zoro.fetchEpisodeServers(id);
+  //api/anime/hianime/servers/:episodeId
+  fastify.get('/servers/:episodeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    const episodeId = String(request.params.episodeId);
+    const data = await zoro.fetchEpisodeServers(episodeId);
+
     return reply.send({ data });
   });
 
-  fastify.get('/sources/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { id } = request.params as { id: string };
-    const { category } = request.query as { category: SubOrDub };
-    const { server } = request.query as { server: HiAnimeServers };
+  //api/anime/hianime/watch/:episodeId?category=sub&server=hd-1
+  fastify.get(
+    '/watch/:episodeId',
+    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+      const episodeId = String(request.params.episodeId);
+      const category = request.query.category || 'sub';
+      const server = request.query.server || 'hd-1';
 
-    const newserver = toZoroServers(server);
-    const newcategory = toCategory(category);
+      const newserver = toZoroServers(server);
+      const newcategory = toCategory(category);
 
-    const data = await zoro.fetchSources(id, newserver, newcategory);
-    return reply.send({ data });
-  });
+      const cacheKey = `zoro-watch-${episodeId}-${newcategory}-${newserver}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.send({
+          data: cachedData,
+        });
+      }
+      const data = await zoro.fetchSources(episodeId, newserver, newcategory);
+
+      if (data?.data?.sources && Array.isArray(data.data.sources) && data.data.sources.length > 0) {
+        await redisSetCache(cacheKey, data, 1);
+      }
+      return reply.send({ data });
+    },
+  );
 }

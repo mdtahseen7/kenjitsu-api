@@ -1,5 +1,5 @@
 /// to do list
-build api routes
+
 validation entry before searching
 caching ? ioredis / lru cache
 write to db when i host it my self
@@ -21,3 +21,7 @@ especially one piece and bleach ,naruto
   redis storing error data 
   is there a way to be notified of what caches have expired
 
+//
+fix redis please
+
+//https://animekai.to/browser?keyword=show+me+your+panties+while+you+give+me+that+disgusted

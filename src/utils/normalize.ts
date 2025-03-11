@@ -25,11 +25,12 @@ export function toFormatAnilist(input: string): Format {
   const validFormats = Object.values(Format).join(' or ');
   throw new Error(`Invalid input: ${input}. Required inputs are: ${validFormats}`);
 }
-export const AnimeProvider = {
+
+const AnimeProvider = {
   HiAnime: 'hianime',
   Animekai: 'animekai',
 };
-export type AnimeProvider = (typeof AnimeProvider)[keyof typeof AnimeProvider];
+type AnimeProvider = (typeof AnimeProvider)[keyof typeof AnimeProvider];
 export function toProvider(input: string): AnimeProvider {
   if (!input) {
     input = AnimeProvider.HiAnime;
@@ -94,7 +95,6 @@ const ZoroServers = {
 type ZoroServers = (typeof ZoroServers)[keyof typeof ZoroServers];
 
 export function toZoroServers(input: string): ZoroServers {
-  const validInputs = Object.values(ZoroServers).join(' or ');
   if (!input) {
     input = ZoroServers.HD1;
   }
@@ -102,6 +102,6 @@ export function toZoroServers(input: string): ZoroServers {
   if (Object.values(ZoroServers).includes(lowerCaseInput as ZoroServers)) {
     return lowerCaseInput as ZoroServers;
   }
-
+  const validInputs = Object.values(ZoroServers).join(' or ');
   throw new Error(`Invalid input: ${input}. Required inputs are: ${validInputs}`);
 }

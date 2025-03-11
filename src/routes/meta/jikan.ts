@@ -3,10 +3,14 @@ import { AnimeProvider, Format, Jikan, Seasons } from 'hakai-extensions';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 import { FastifyQuery, FastifyParams } from '../../utils/types.js';
 import { toProvider } from '../../utils/normalize.js';
+import { ratelimitPlugin, ratelimitOptions } from '../../config/ratelimit.js';
 
 const jikan = new Jikan();
 
 export default async function JikanRoutes(fastify: FastifyInstance) {
+  await fastify.register(ratelimitPlugin, {
+    ...ratelimitOptions,
+  });
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({
       message: 'Welcome to Jikan metadata provider',
@@ -16,6 +20,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
   // api/meta/jikan/search?q=string&page=number&perPage=number
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const q = String(request.query.q);
+
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 25);
@@ -28,6 +33,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
   // api/meta/jikan/info/:malId
   fastify.get('/info/:malId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const malId = Number(request.params.malId);
+
     const cacheKey = `jikan-info-${malId}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) {
@@ -236,6 +242,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       }
 
       const data = await jikan.fetchMalEpisodeInfo(malId, episodeNumber);
+
       if (data.success === true && data.data !== null) await redisSetCache(cacheKey, data, 12);
       return reply.send({ data });
     },
