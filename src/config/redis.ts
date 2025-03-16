@@ -1,18 +1,29 @@
 import 'dotenv';
 import { Redis } from 'ioredis';
 
-const port = process.env.REDIS_PORT;
+const port = Number(process.env.REDIS_PORT);
 const host = process.env.REDIS_HOST;
 const password = process.env.REDIS_PASSWORD;
 
-export const redis = new Redis({
-  host: host,
-  password: password,
-  port: Number(port),
-  tls: {},
-});
+// Check if required environment variables are provided
+const isRedisEnabled = host && password;
+
+// Create a Redis client only if environment variables are provided
+export const redis = isRedisEnabled
+  ? new Redis({
+      host: host,
+      port: port,
+      password: password,
+      tls: {},
+    })
+  : null;
 
 async function checkRedis() {
+  if (!redis) {
+    console.log('❌ Redis is disabled (missing environment variables).');
+    return;
+  }
+
   try {
     const pong = await redis.ping();
     console.log('✅ Redis Connection Successful:', pong);
@@ -21,4 +32,4 @@ async function checkRedis() {
   }
 }
 
-// checkRedis();
+checkRedis();

@@ -1,4 +1,3 @@
-/// here is where i will define options for rate limit
 import 'dotenv/config';
 export const ratelimitPlugin = import('@fastify/rate-limit');
 

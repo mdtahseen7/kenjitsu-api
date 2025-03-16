@@ -179,7 +179,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     },
   );
 
-  //api/meta/anilist/get-provider/:anilistId/provider=string
+  //api/meta/anilist/get-provider/:anilistId?provider=string
   fastify.get(
     '/get-provider/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
@@ -206,7 +206,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     },
   );
 
-  //api/meta/anilist/provider-episodes/:anilistId/provider=string
+  //api/meta/anilist/provider-episodes/:anilistId?provider=string
   fastify.get(
     '/provider-episodes/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
