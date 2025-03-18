@@ -3,14 +3,10 @@ import { AnimeProvider, Format, Jikan, Seasons } from 'hakai-extensions';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 import { FastifyQuery, FastifyParams } from '../../utils/types.js';
 import { toProvider } from '../../utils/normalize.js';
-import { ratelimitPlugin, ratelimitOptions } from '../../config/ratelimit.js';
 
 const jikan = new Jikan();
 
 export default async function JikanRoutes(fastify: FastifyInstance) {
-  await fastify.register(ratelimitPlugin, {
-    ...ratelimitOptions,
-  });
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({
       message: 'Welcome to Jikan metadata provider',
