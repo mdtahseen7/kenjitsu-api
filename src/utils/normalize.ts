@@ -31,15 +31,14 @@ const AnimeProvider = {
   Animekai: 'animekai',
 };
 type AnimeProvider = (typeof AnimeProvider)[keyof typeof AnimeProvider];
+
 export function toProvider(input: string): AnimeProvider {
   if (!input) {
-    input = AnimeProvider.HiAnime;
+    return AnimeProvider.HiAnime;
   }
 
-  const lowerCaseInput = input.toLowerCase();
-
-  if (Object.values(AnimeProvider).includes(lowerCaseInput as AnimeProvider)) {
-    return lowerCaseInput as AnimeProvider;
+  if (Object.values(AnimeProvider).includes(input as AnimeProvider)) {
+    return input as AnimeProvider;
   }
 
   const validAnimeProvider = Object.values(AnimeProvider).join(' or ');

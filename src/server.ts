@@ -4,6 +4,7 @@ import AnimeRoutes from './routes/anime/index.js';
 import { notFoundRateLimiter, ratelimitOptions, ratelimitPlugin } from './config/ratelimit.js';
 import Fastify from 'fastify';
 import Cors from './config/cors.js';
+import { purgeCache } from './middleware/cache.js';
 
 const app = Fastify({ maxParamLength: 1000, logger: true });
 async function FastifyApp() {
@@ -46,6 +47,7 @@ async function FastifyApp() {
   }
 }
 FastifyApp();
+purgeCache();
 export default async function handler(req: any, res: any) {
   await app.ready();
   app.server.emit('request', req, res);
