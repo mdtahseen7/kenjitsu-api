@@ -29,20 +29,23 @@ export function toFormatAnilist(input: string): Format {
 const AnimeProvider = {
   HiAnime: 'hianime',
   Animekai: 'animekai',
-};
-type AnimeProvider = (typeof AnimeProvider)[keyof typeof AnimeProvider];
+} as const; // Ensures values are readonly
+
+type AnimeProvider = (typeof AnimeProvider)[keyof typeof AnimeProvider]; // Extracts type
 
 export function toProvider(input: string): AnimeProvider {
   if (!input) {
     return AnimeProvider.HiAnime;
   }
 
-  if (Object.values(AnimeProvider).includes(input as AnimeProvider)) {
-    return input as AnimeProvider;
+  const normalizedInput = input.trim().toLowerCase(); // Trim and convert to lowercase
+
+  if (Object.values(AnimeProvider).some(provider => provider === normalizedInput)) {
+    return normalizedInput as AnimeProvider;
   }
 
   const validAnimeProvider = Object.values(AnimeProvider).join(' or ');
-  throw new Error(`Invalid input: ${input} .Required inputs are: ${validAnimeProvider}`);
+  throw new Error(`Invalid input: ${input}. Required inputs are: ${validAnimeProvider}`);
 }
 
 const Seasons = {

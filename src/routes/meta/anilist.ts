@@ -211,12 +211,12 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     '/provider-episodes/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       const anilistId = Number(request.params.anilistId);
-      const provider = request.query.provider || 'hianime' || 'animekai';
+      const provider = request.query.provider || 'hianime';
 
-      const newprovider = toProvider(provider) as AnimeProvider;
+      const newprovider = toProvider(provider);
 
       const cacheKey = `anilist-provider-episodes-${anilistId}-${newprovider}`;
-
+      console.log(newprovider);
       const cachedData = await redisGetCache(cacheKey);
       if (cachedData) {
         return reply.send({ data: cachedData });
