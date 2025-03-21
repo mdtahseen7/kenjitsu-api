@@ -1,11 +1,10 @@
 
-
-# **Hakai API**  
-A fast and efficient anime data provider built using Fastify.
-
 <p align="center">
-  <img src="https://your-image-link.com/beerus.png" alt="Beerus the Destroyer" width="300">
+  <img src="https://m3jz13d05b.ufs.sh/f/dLgmbGNJLXerMjDNawBovlI3sdb2nkrUQc6OBfxYZGS19XE7" alt="Beerus the Destroyer" width="450">
 </p>
+
+<h1 align="center">Hakai API</h1>  
+<p align = "center">A RESTful api serving anime metadata.</p>
 
 ## **Features**  
 ✅ **Search Anime** by title  
@@ -13,7 +12,7 @@ A fast and efficient anime data provider built using Fastify.
 📺 **Fetch Streaming Servers**  
 🎥 **Get Watch Links** for anime episodes  
 ⚡ **Caching with Redis & Memory** for performance  
-🛡️ **Rate Limiting** to prevent abuse
+🛡️ **Rate Limiting** to prevent abuse  
 
 ---
 
@@ -29,7 +28,6 @@ node -v
 ```
 
 This should output the installed Node.js version.
-
 
 ### **Clone the Repository**  
 ```sh
@@ -91,5 +89,4 @@ Pull requests are welcome! Feel free to fork and submit improvements.
 ## ⚖ License  
 This project is licensed under the **MIT License**. See the [LICENSE](./LICENSE) file for details.
 
----
 
