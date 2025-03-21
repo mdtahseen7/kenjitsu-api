@@ -1,8 +1,4 @@
-I can't generate an image of Beerus due to copyright restrictions, but you can add an image manually. You can use an official image from Dragon Ball or an AI-generated representation of a "feline-like god of destruction with purple skin" if you want something unique.  
 
-Here’s how you can modify your README to include an image and information on Node.js installation:
-
----
 
 # **Hakai API**  
 A fast and efficient anime data provider built using Fastify.
@@ -35,18 +31,18 @@ node -v
 This should output the installed Node.js version.
 
 
-### ** Clone the Repository**  
+### **Clone the Repository**  
 ```sh
 git clone https://github.com/middlegear/hakai-api.git
 cd hakai-api
 ```
 
-### ** Install Dependencies**  
+### **Install Dependencies**  
 ```sh
 pnpm install
 ```
 
-### ** Set Up Environment Variables**  
+### **Set Up Environment Variables**  
 Create a `.env` file in the root directory:
 
 ```
@@ -81,7 +77,7 @@ MEMORY_CACHE_TTL_MINUTES=30
 ALLOWED_ORIGINS=*
 ```
 
-### ** Start the Server**  
+### **Start the Server**  
 ```sh
 pnpm run dev
 ```
