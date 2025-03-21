@@ -5,6 +5,7 @@ import { notFoundRateLimiter, ratelimitOptions, ratelimitPlugin } from './config
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { checkRedis } from './config/redis.js';
+import StaticRoutes from './routes/static.js';
 
 const app = Fastify({ maxParamLength: 1000, logger: true });
 async function FastifyApp() {
@@ -16,7 +17,7 @@ async function FastifyApp() {
     origin: '*',
     methods: 'GET',
   });
-
+  app.register(StaticRoutes);
   // Rate limiting
   await app.register(ratelimitPlugin, ratelimitOptions);
   app.setNotFoundHandler(
@@ -29,11 +30,8 @@ async function FastifyApp() {
   );
 
   // API routes
-  app.register(MetaRoutes, { prefix: '/api/meta' });
-  app.register(AnimeRoutes, { prefix: '/api/anime' });
-  app.get('/', async (request, reply) => {
-    reply.status(200).send({ message: 'Available routes are /anime & /meta' });
-  });
+  await app.register(MetaRoutes, { prefix: '/api/meta' });
+  await app.register(AnimeRoutes, { prefix: '/api/anime' });
 
   // Server
 

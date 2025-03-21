@@ -9,9 +9,6 @@ write some tests if possible
 
 
 
-  stale revalidation
-
-
 
 
 

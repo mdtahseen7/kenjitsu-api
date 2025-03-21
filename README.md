@@ -6,6 +6,9 @@
 <h1 align="center">Hakai API</h1>  
 <p align = "center">A RESTful api serving anime metadata.</p>
 
+> **Disclaimer:**  
+> This package is **unofficial** and is **not affiliated** with Anilist, Jikan, or any third-party providers. It does not host, own, or distribute any content. All data belongs to its respective owners.  
+
 ## **Features**  
 ✅ **Search Anime** by title  
 📄 **Get Anime Metadata** including episodes and details  
@@ -18,7 +21,7 @@
 
 ## **Installation**  
 
-### ** Install Node.js**  
+### **Install Node.js**  
 Before using Hakai API, ensure you have **Node.js** installed. You can download it from:  
 ➡ [Node.js Official Website](https://nodejs.org/)
 
@@ -77,7 +80,7 @@ ALLOWED_ORIGINS=*
 
 ### **Start the Server**  
 ```sh
-pnpm run dev
+pnpm run start
 ```
 The API will run on **`http://localhost:3000`**.
 
