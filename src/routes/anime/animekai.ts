@@ -18,7 +18,6 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     });
   });
 
-  // api/anime/animekai/search?q=string&page=number
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
@@ -32,7 +31,6 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     return reply.send({ data });
   });
 
-  //api/anime/animekai/info/:animeId
   fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const animeId = String(request.params.animeId);
     const data = await animekai.fetchAnimeInfo(animeId);

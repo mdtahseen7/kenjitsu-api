@@ -7,12 +7,10 @@ import { FastifyParams, FastifyQuery } from '../../utils/types.js';
 const anilist = new Anilist();
 
 export default async function AnilistRoutes(fastify: FastifyInstance) {
-  // api/meta/anilist
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({ message: 'Welcome to Anilist Metadata provider' });
   });
 
-  // api/meta/anilist?q=yoursearchquery&page=number&perpage=number
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
@@ -28,7 +26,6 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     return reply.send({ data });
   });
 
-  // api/meta/anilist/info/:anilistId
   fastify.get('/info/:anilistId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const anilistId = Number(request.params.anilistId);
 
@@ -47,7 +44,6 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     return reply.send({ data });
   });
 
-  // api/meta/anilist/top-airing?page=number&perPage=number
   fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;

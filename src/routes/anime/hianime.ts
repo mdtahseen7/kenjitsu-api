@@ -17,7 +17,6 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/anime/hianime/search?q=''&page=number
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
@@ -31,7 +30,6 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     return reply.send({ data });
   });
 
-  //api/anime/hianime/info/:animeId
   fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const animeId = String(request.params.animeId);
 
@@ -40,7 +38,6 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     return reply.send({ data });
   });
 
-  //api/anime/hianime/episodes/:id
   fastify.get('/episodes/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const animeId = String(request.params.animeId);
     const data = await zoro.fetchEpisodes(animeId);
@@ -48,7 +45,6 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     return reply.send({ data });
   });
 
-  //api/anime/hianime/servers/:episodeId
   fastify.get('/servers/:episodeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const episodeId = String(request.params.episodeId);
     const data = await zoro.fetchEpisodeServers(episodeId);
@@ -56,7 +52,6 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     return reply.send({ data });
   });
 
-  //api/anime/hianime/watch/:episodeId?category=sub&server=hd-1
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
