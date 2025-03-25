@@ -33,8 +33,19 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
 
   fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const animeId = String(request.params.animeId);
+    const cacheKey = `animekai-episodesinfo-${animeId}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.send({
+        data: cachedData,
+      });
+    }
     const data = await animekai.fetchAnimeInfo(animeId);
 
+    const status = data.data?.status?.toLowerCase().trim();
+    if (status === 'completed') {
+      await redisSetCache(cacheKey, data, 148);
+    }
     return reply.send({ data });
   });
 

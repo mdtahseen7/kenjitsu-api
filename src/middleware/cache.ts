@@ -1,8 +1,6 @@
 import { redis } from '../config/redis.js'; // Redis is optional
-import snappy from 'snappy';
 import 'dotenv';
 
-const COMPRESSION_THRESHOLD = 1024; // Compress if data is larger than 1KB
 const MEMORY_CACHE_ENABLED = process.env.MEMORY_CACHE_ENABLED === 'true'; // Enable in-memory caching
 const DEFAULT_CACHE_EXPIRY_HOURS = 1;
 
@@ -19,38 +17,6 @@ if (MEMORY_CACHE_ENABLED) {
   console.log(`Memory caching TTL is ${(MEMORY_CACHE_TTL / 60000).toFixed(1)} minutes`);
 } else {
   console.log('❌ Memory Caching Disabled');
-}
-
-/**
- *
- * Compresses data using Snappy if it exceeds the threshold.
- */
-async function compressData(data: string): Promise<Buffer | string> {
-  if (!data) throw new Error('Data cannot be empty');
-  if (data.length > COMPRESSION_THRESHOLD) {
-    const compressed = await snappy.compress(Buffer.from(data));
-    console.log('Data compressed successfully');
-    return compressed;
-  }
-  return data;
-}
-
-/**
- * Decompresses data using Snappy if it is compressed.
- */
-async function decompressData(data: Buffer | string): Promise<string> {
-  if (!data) throw new Error('Data cannot be empty');
-  try {
-    if (data instanceof Buffer) {
-      const decompressed = await snappy.uncompress(data, { asBuffer: false });
-      console.log('Data decompressed successfully');
-      return decompressed.toString();
-    }
-    return data as string;
-  } catch (error) {
-    console.error('Decompression failed:', error);
-    throw new Error('Invalid or corrupted compressed data');
-  }
 }
 
 /**
@@ -74,8 +40,7 @@ async function redisSetCache<T>(key: string, value: T, ttlInHours: number = DEFA
   const stringValue = JSON.stringify(value);
 
   if (redis) {
-    const dataToStore = await compressData(stringValue);
-    await redis.set(key, dataToStore, 'EX', ttlInHours * 3600);
+    await redis.set(key, stringValue, 'EX', ttlInHours * 3600);
     console.log(`Data stored in Redis (Key: ${key})`);
   }
 
@@ -100,16 +65,19 @@ async function redisGetCache<T>(key: string): Promise<T | null> {
   }
 
   if (redis) {
-    const data = await redis.getBuffer(key);
+    const data = await redis.get(key);
     if (data) {
-      const decompressedData = await decompressData(data);
-      const value = JSON.parse(decompressedData) as T;
-      console.log(`Cache hit (Redis) - Key: ${key}`);
-      if (MEMORY_CACHE_ENABLED) {
-        memoryCache.set(key, { value, timestamp: Date.now() });
+      try {
+        const value = JSON.parse(data) as T;
+        console.log(`Cache hit (Redis) - Key: ${key}`);
+        if (MEMORY_CACHE_ENABLED) {
+          memoryCache.set(key, { value, timestamp: Date.now() });
+        }
+        return value;
+      } catch (error) {
+        console.error('Error parsing JSON from Redis:', error);
+        return null;
       }
-
-      return value;
     }
   }
   if (redis || MEMORY_CACHE_ENABLED) {
