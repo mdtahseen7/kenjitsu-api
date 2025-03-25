@@ -29,3 +29,4 @@ export async function checkRedis() {
     console.error('❌ Redis Connection Failed:', err);
   }
 }
+checkRedis();

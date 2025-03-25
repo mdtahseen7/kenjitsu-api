@@ -13,8 +13,6 @@ import { purgeCache } from './middleware/cache.js';
 
 const app = Fastify({ maxParamLength: 1000, logger: true });
 async function FastifyApp() {
-  //check redis
-  await checkRedis();
   //CORS
 
   await app.register(fastifyCors, {

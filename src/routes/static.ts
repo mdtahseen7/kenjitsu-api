@@ -16,6 +16,6 @@ export default async function StaticRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/', async (request, reply) => {
-    return reply.sendFile('index.html'); // Serve the index.html file
+    return reply.sendFile('index.html');
   });
 }
