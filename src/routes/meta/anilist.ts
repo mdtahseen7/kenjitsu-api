@@ -22,27 +22,32 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 50);
 
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
     const data = await anilist.search(q, page, perPage);
 
-    return reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`).send({ data });
+    return reply.send({ data });
   });
 
   fastify.get('/info/:anilistId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const anilistId = Number(request.params.anilistId);
 
     const cacheKey = `anilist-info-${anilistId}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.send({ data: cachedData });
-    }
+
     const data = await anilist.fetchInfo(anilistId);
     let timecached: number;
     const status = data.data?.status.toLowerCase().trim();
     status === 'finished' ? (timecached = 148) : (timecached = 12);
+    reply.header('Cache-Control', `s-maxage=${timecached * 60 * 60}, stale-while-revalidate=300`);
+
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.send({ data: cachedData });
+    }
 
     if (data.success === true && data.data !== null) await redisSetCache(cacheKey, data, timecached);
 
-    return reply.header('Cache-Control', `s-maxage=${timecached * 60 * 60}, stale-while-revalidate=300`).send({ data });
+    return reply.send({ data });
   });
 
   fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
