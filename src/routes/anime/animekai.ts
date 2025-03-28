@@ -28,7 +28,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     const page = Number(request.query.page) || 1;
 
     const data = await animekai.search(q, page);
-    return reply.send({ data });
+    return reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate').send({ data });
   });
 
   fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
@@ -40,12 +40,16 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
         data: cachedData,
       });
     }
+    let cacheTime = 30; // 1 min
     const data = await animekai.fetchAnimeInfo(animeId);
 
     const status = data.data?.status?.toLowerCase().trim();
     if (status === 'completed') {
+      cacheTime = 60 * 12; // 12 hours if completed try a test with 24 hrs
       await redisSetCache(cacheKey, data, 148);
     }
+    /// 30 for airing while 12 hours for completed revalidation 5 mins
+    reply.header('Cache-Control', `s-maxage=${cacheTime * 60}, stale-while-revalidate=300`);
     return reply.send({ data });
   });
 
@@ -58,19 +62,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
 
       const newcategory = toCategory(category);
 
-      const cacheKey = `animekai-servers-${episodeId}-${newcategory}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.send({
-          data: cachedData,
-        });
-      }
-
       const data = await animekai.fetchServers(episodeId, newcategory);
-
-      if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-        await redisSetCache(cacheKey, data, 3);
-      }
 
       return reply.send({ data });
     },
@@ -85,17 +77,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
 
       const newcategory = toCategory(category);
 
-      const cacheKey = `animekai-watch-${episodeId}-${newcategory}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.send({
-          data: cachedData,
-        });
-      }
       const data = await animekai.fetchSources(episodeId, newcategory);
-      if (data?.data?.sources && Array.isArray(data.data.sources) && data.data.sources.length > 0) {
-        await redisSetCache(cacheKey, data, 0.1);
-      }
 
       return reply.send({ data });
     },
