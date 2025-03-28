@@ -91,7 +91,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     perPage = Math.min(perPage, 50);
 
     const newformat = toFormatAnilist(format);
-
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
     const cacheKey = `anilist-top-anime-${page}-${perPage}-${newformat}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) {
@@ -101,7 +101,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const data = await anilist.fetchTopRatedAnime(page, perPage, newformat);
 
     if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 24);
-    return reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`).send({ data });
+    reply.send({ data });
   });
 
   // api/anilist/upcoming?page=number&perPage=number
