@@ -19,9 +19,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     if (q.length > 100) {
       return reply.status(400).send({ error: 'Query too long' });
     }
-    if (!q) {
-      return reply.status(400).send({ error: 'Missing required params' });
-    }
+
     const page = Number(request.query.page) || 1;
 
     reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');

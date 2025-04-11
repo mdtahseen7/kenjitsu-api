@@ -32,14 +32,16 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
       });
     }
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
       total: result.total,
-      lastPage: result.perPage,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
       data: result.data,
     });
   });
@@ -60,10 +62,6 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       });
     }
 
-    let timecached: number;
-    const status = result.data?.status.toLowerCase().trim();
-    status === 'finished' ? (timecached = 148) : (timecached = 12);
-
     const cachedData = (await redisGetCache(cacheKey)) as AnilistInfo;
 
     if (cachedData) {
@@ -77,7 +75,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         data: result.data,
       };
 
-      await redisSetCache(cacheKey, cacheableData, timecached);
+      await redisSetCache(cacheKey, cacheableData, 24);
     }
     return reply.status(200).send({
       data: result.data,
@@ -96,11 +94,12 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
       return reply.status(200).send({
-        data: cachedData.data,
         hasNextPage: cachedData.hasNextPage,
         currentPage: cachedData.currentPage,
         total: cachedData.total,
-        lastPage: cachedData.perPage,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
       });
     }
     const result = await anilist.fetchAiring(page, perPage);
@@ -111,7 +110,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
       });
     }
     if (result.data.length > 0) {
@@ -119,7 +119,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
         data: result.data,
       };
 
@@ -130,7 +131,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
       total: result.total,
-      lastPage: result.perPage,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
       data: result.data,
     });
   });
@@ -151,11 +153,12 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
       return reply.status(200).send({
-        data: cachedData.data,
         hasNextPage: cachedData.hasNextPage,
         currentPage: cachedData.currentPage,
         total: cachedData.total,
-        lastPage: cachedData.perPage,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
       });
     }
 
@@ -168,7 +171,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
       });
     }
     if (result.data.length > 0) {
@@ -176,7 +180,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
         data: result.data,
       };
 
@@ -187,7 +192,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
       total: result.total,
-      lastPage: result.perPage,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
       data: result.data,
     });
   });
@@ -211,7 +217,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: cachedData.hasNextPage,
         currentPage: cachedData.currentPage,
         total: cachedData.total,
-        lastPage: cachedData.perPage,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
       });
     }
 
@@ -224,7 +231,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
       });
     }
     if (result.data.length > 0) {
@@ -232,7 +240,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
         data: result.data,
       };
 
@@ -243,7 +252,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
       total: result.total,
-      lastPage: result.perPage,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
       data: result.data,
     });
   });
@@ -261,11 +271,12 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
       return reply.status(200).send({
-        data: cachedData.data,
         hasNextPage: cachedData.hasNextPage,
         currentPage: cachedData.currentPage,
         total: cachedData.total,
-        lastPage: cachedData.perPage,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
       });
     }
     const result = await anilist.fetchTopUpcoming(page, perPage);
@@ -277,7 +288,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
       });
     }
     if (result.data.length > 0) {
@@ -285,7 +297,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
         data: result.data,
       };
 
@@ -296,7 +309,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
       total: result.total,
-      lastPage: result.perPage,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
       data: result.data,
     });
   });
@@ -332,11 +346,12 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
       return reply.status(200).send({
-        data: cachedData.data,
         hasNextPage: cachedData.hasNextPage,
         currentPage: cachedData.currentPage,
         total: cachedData.total,
-        lastPage: cachedData.perPage,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
       });
     }
     const result = await anilist.fetchTrending(page, perPage);
@@ -348,7 +363,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
       });
     }
     if (result.data.length > 0) {
@@ -356,7 +372,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
         data: result.data,
       };
 
@@ -367,7 +384,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
       total: result.total,
-      lastPage: result.perPage,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
       data: result.data,
     });
   });
@@ -414,14 +432,16 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
           hasNextPage: result.hasNextPage,
           currentPage: result.currentPage,
           total: result.total,
-          lastPage: result.perPage,
+          perPage: result.perPage,
+          lastPage: result.lastPage,
         });
       }
       return reply.status(200).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
-        lastPage: result.perPage,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
         data: result.data,
       });
     },

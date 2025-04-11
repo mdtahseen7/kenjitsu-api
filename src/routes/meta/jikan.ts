@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { AnimeProvider, Format, Jikan, Seasons } from 'hakai-extensions';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
-import { FastifyQuery, FastifyParams } from '../../utils/types.js';
+import { FastifyQuery, FastifyParams, AnilistInfo, AnilistRepetitive } from '../../utils/types.js';
 import { toProvider } from '../../utils/normalize.js';
 
 const jikan = new Jikan();
@@ -28,9 +28,27 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
 
-    const data = await jikan.search(q, page, perPage);
+    const result = await jikan.search(q, page, perPage);
 
-    return reply.send({ data });
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+      });
+    }
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      total: result.total,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
+      data: result.data,
+    });
   });
 
   // api/jikan/info/:malId
@@ -38,23 +56,33 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const malId = Number(request.params.malId);
 
     const cacheKey = `jikan-info-${malId}`;
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    const result = await jikan.fetchInfo(malId);
 
-    const data = await jikan.fetchInfo(malId);
+    const cachedData = (await redisGetCache(cacheKey)) as AnilistInfo;
 
-    let timecached: number;
-    const status = data.data?.status.toLowerCase().trim();
-    status === 'finished airing' ? (timecached = 148) : (timecached = 4);
-
-    reply.header('Cache-Control', `s-maxage=${timecached * 60 * 60}, stale-while-revalidate=300`);
-
-    const cachedData = await redisGetCache(cacheKey);
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+      });
+    }
     if (cachedData) {
-      return reply.send({ cachedData });
+      return reply.status(200).send({
+        data: cachedData.data,
+      });
     }
 
-    if (data.success === true && data.data !== null) await redisSetCache(cacheKey, data, timecached);
+    if (result.data !== null) {
+      const cacheableData = {
+        data: result.data,
+      };
 
-    return reply.send({ data });
+      await redisSetCache(cacheKey, cacheableData, 24);
+    }
+    return reply.status(200).send({
+      data: result.data,
+    });
   });
 
   // api/jikan/top-airing?page=number&perPage=number&format=format
@@ -67,16 +95,50 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
 
     const cacheKey = `jikan-top-airing-${page}-${perPage}-${format}`;
-    const cachedData = await redisGetCache(cacheKey);
+
+    const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
-      return reply.send({ data: cachedData });
+      return reply.status(200).send({
+        hasNextPage: cachedData.hasNextPage,
+        currentPage: cachedData.currentPage,
+        total: cachedData.total,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
+      });
     }
+    const result = await jikan.fetchTopAiring(page, perPage, format);
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+      });
+    }
+    if (result.data.length > 0) {
+      const cacheableData = {
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+        data: result.data,
+      };
 
-    const data = await jikan.fetchTopAiring(page, perPage, format);
-
-    if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 6);
-
-    return reply.send({ data });
+      await redisSetCache(cacheKey, cacheableData, 6);
+    }
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      total: result.total,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
+      data: result.data,
+    });
   });
 
   //api/jikan/most-popular?page=number&perPage=number&format=format
@@ -89,16 +151,52 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const cacheKey = `jikan-most-popular${page}-${perPage}-${format}`;
-    const cachedData = await redisGetCache(cacheKey);
+
+    const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
-      return reply.send({ data: cachedData });
+      return reply.status(200).send({
+        hasNextPage: cachedData.hasNextPage,
+        currentPage: cachedData.currentPage,
+        total: cachedData.total,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
+      });
     }
 
-    const data = await jikan.fetchMostPopular(page, perPage, format);
+    const result = await jikan.fetchMostPopular(page, perPage, format);
 
-    if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 24);
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+      });
+    }
+    if (result.data.length > 0) {
+      const cacheableData = {
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+        data: result.data,
+      };
 
-    return reply.send({ data });
+      await redisSetCache(cacheKey, cacheableData, 24);
+    }
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      total: result.total,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
+      data: result.data,
+    });
   });
 
   //api/jikan/upcoming?page=number&perPage=number
@@ -110,16 +208,53 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const cacheKey = `jikan-upcoming-${page}-${perPage}`;
-    const cachedData = await redisGetCache(cacheKey);
+
+    const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
-      return reply.send({ data: cachedData });
+      return reply.status(200).send({
+        hasNextPage: cachedData.hasNextPage,
+        currentPage: cachedData.currentPage,
+        total: cachedData.total,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
+      });
     }
 
-    const data = await jikan.fetchTopUpcoming(page, perPage);
+    const result = await jikan.fetchTopUpcoming(page, perPage);
 
-    if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 24);
+    if (result.data.length > 0) {
+      const cacheableData = {
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+        data: result.data,
+      };
 
-    return reply.send({ data });
+      await redisSetCache(cacheKey, cacheableData, 24);
+    }
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+      });
+    }
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      total: result.total,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
+      data: result.data,
+    });
   });
 
   //api/jikan/movies?page=number&perPage=number
@@ -131,16 +266,52 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const cacheKey = `jikan-movies-category-${page}-${perPage}`;
-    const cachedData = await redisGetCache(cacheKey);
+
+    const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
-      return reply.send({ cachedData });
+      return reply.status(200).send({
+        hasNextPage: cachedData.hasNextPage,
+        currentPage: cachedData.currentPage,
+        total: cachedData.total,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
+      });
+    }
+    const result = await jikan.fetchTopMovies(page, perPage);
+
+    if (result.data.length > 0) {
+      const cacheableData = {
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+        data: result.data,
+      };
+
+      await redisSetCache(cacheKey, cacheableData, 24);
     }
 
-    const data = await jikan.fetchTopMovies(page, perPage);
-
-    if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 24);
-
-    return reply.send({ data });
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+      });
+    }
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      total: result.total,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
+      data: result.data,
+    });
   });
 
   //api/jikan/seasons/:season/:year?page=number&perPage=number
@@ -157,16 +328,52 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const cacheKey = `jikan-seasons-${season}-${year}-${page}-${perPage}-${format}`;
-      const cachedData = await redisGetCache(cacheKey);
+      const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
       if (cachedData) {
-        return reply.send({ data: cachedData });
+        return reply.status(200).send({
+          hasNextPage: cachedData.hasNextPage,
+          currentPage: cachedData.currentPage,
+          total: cachedData.total,
+          perPage: cachedData.perPage,
+          lastPage: cachedData.lastPage,
+          data: cachedData.data,
+        });
       }
 
-      const data = await jikan.fetchSeason(season, year, format, page, perPage);
+      const result = await jikan.fetchSeason(season, year, format, page, perPage);
 
-      if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 24);
+      if (result.data.length > 0) {
+        const cacheableData = {
+          hasNextPage: result.hasNextPage,
+          currentPage: result.currentPage,
+          total: result.total,
+          perPage: result.perPage,
+          lastPage: result.lastPage,
+          data: result.data,
+        };
 
-      return reply.send({ data });
+        await redisSetCache(cacheKey, cacheableData, 24);
+      }
+
+      if ('error' in result) {
+        return reply.status(500).send({
+          error: result.error,
+          data: result.data,
+          hasNextPage: result.hasNextPage,
+          currentPage: result.currentPage,
+          total: result.total,
+          perPage: result.perPage,
+          lastPage: result.lastPage,
+        });
+      }
+      return reply.status(200).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+        data: result.data,
+      });
     },
   );
 
@@ -180,16 +387,52 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
 
     const cacheKey = `jikan-current-season-${page}-${perPage}-${format}`;
-    const cachedData = await redisGetCache(cacheKey);
+
+    const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
-      return reply.send({ data: cachedData });
+      return reply.status(200).send({
+        hasNextPage: cachedData.hasNextPage,
+        currentPage: cachedData.currentPage,
+        total: cachedData.total,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
+      });
+    }
+    const result = await jikan.fetchCurrentSeason(page, perPage, format);
+
+    if (result.data.length > 0) {
+      const cacheableData = {
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+        data: result.data,
+      };
+
+      await redisSetCache(cacheKey, cacheableData, 6);
     }
 
-    const data = await jikan.fetchCurrentSeason(page, perPage, format);
-
-    if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 6);
-
-    return reply.send({ data });
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+      });
+    }
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      total: result.total,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
+      data: result.data,
+    });
   });
 
   //api/jikan/next-season?page=number&perPage=number&format=string
@@ -203,14 +446,51 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-    const cachedData = await redisGetCache(cacheKey);
+    const cachedData = (await redisGetCache(cacheKey)) as AnilistRepetitive;
     if (cachedData) {
-      return reply.send({ data: cachedData });
+      return reply.status(200).send({
+        hasNextPage: cachedData.hasNextPage,
+        currentPage: cachedData.currentPage,
+        total: cachedData.total,
+        perPage: cachedData.perPage,
+        lastPage: cachedData.lastPage,
+        data: cachedData.data,
+      });
     }
-    const data = await jikan.fetchNextSeason(page, perPage, format);
+    const result = await jikan.fetchNextSeason(page, perPage, format);
 
-    if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 24);
-    return reply.send({ data });
+    if (result.data.length > 0) {
+      const cacheableData = {
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+        data: result.data,
+      };
+
+      await redisSetCache(cacheKey, cacheableData, 48);
+    }
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        total: result.total,
+        perPage: result.perPage,
+        lastPage: result.lastPage,
+      });
+    }
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      total: result.total,
+      perPage: result.perPage,
+      lastPage: result.lastPage,
+      data: result.data,
+    });
   });
 
   //api/jikan/characters/:malId
@@ -219,17 +499,17 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
 
-    const cacheKey = `jikan-characters-${malId}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.send({ data: cachedData });
+    const result = await jikan.fetchAnimeCharacters(malId);
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        error: result.error,
+        data: result.data,
+      });
     }
-
-    const data = await jikan.fetchAnimeCharacters(malId);
-
-    if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 72);
-
-    return reply.send({ data });
+    return reply.status(200).send({
+      data: result.data,
+    });
   });
 
   //api/jikan/mal-episodes/:malId?page=number
@@ -239,19 +519,18 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const malId = Number(request.params.malId);
       const page = Number(request.query.page) || 1;
 
-      reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
-      const cacheKey = `mal-episodes-${malId}-${page}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.send({ data: cachedData });
+      const result = await jikan.fetchMalEpisodes(malId, page);
+      if ('error' in result) {
+        return reply.status(500).send({
+          error: result.error,
+          data: result.data,
+        });
       }
-
-      const data = await jikan.fetchMalEpisodes(malId, page);
-
-      if (data.success === true && data.data.length > 0) await redisSetCache(cacheKey, data, 5);
-
-      return reply.send({ data });
+      return reply.status(200).send({
+        data: result.data,
+      });
     },
   );
 
@@ -264,16 +543,16 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const cacheKey = `mal-episode-info${malId}-${episodeNumber}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.send({ data: cachedData });
+      const result = await jikan.fetchMalEpisodeInfo(malId, episodeNumber);
+      if ('error' in result) {
+        return reply.status(500).send({
+          error: result.error,
+          data: result.data,
+        });
       }
-
-      const data = await jikan.fetchMalEpisodeInfo(malId, episodeNumber);
-
-      if (data.success === true && data.data !== null) await redisSetCache(cacheKey, data, 24);
-      return reply.send({ data });
+      return reply.status(200).send({
+        data: result.data,
+      });
     },
   );
 
@@ -285,22 +564,43 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const provider = request.query.provider || 'hianime';
       const newprovider = toProvider(provider) as AnimeProvider;
 
-      const data = await jikan.fetchProviderAnimeId(malId, newprovider);
+      const result = await jikan.fetchProviderAnimeId(malId, newprovider);
 
       let timecached: number;
-      const status = data.data?.status.toLowerCase().trim();
+      const status = result.data?.status.toLowerCase().trim();
       status === 'finished airing' ? (timecached = 148) : (timecached = 12);
 
       reply.header('Cache-Control', `s-maxage=${timecached * 60 * 60}, stale-while-revalidate=300`);
 
       const cacheKey = `jikan-provider-id-${malId}-${newprovider}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.send({ data: cachedData });
+      if ('error' in result) {
+        return reply.status(500).send({
+          error: result.error,
+          data: result.data,
+          animeProvider: result.animeProvider,
+        });
       }
 
-      if (data.success === true && data.data !== null) await redisSetCache(cacheKey, data, timecached);
-      return reply.send({ data });
+      const cachedData = (await redisGetCache(cacheKey)) as AnilistInfo;
+      if (cachedData) {
+        return reply.status(200).send({
+          data: cachedData.data,
+          animeProvider: cachedData.animeProvider,
+        });
+      }
+      if (result.data !== null && result.animeProvider !== null) {
+        const cacheableData = {
+          data: result.data,
+          animeProvider: result.animeProvider,
+        };
+
+        await redisSetCache(cacheKey, cacheableData, 2);
+      }
+
+      return reply.status(200).send({
+        data: result.data,
+        animeProvider: result.animeProvider,
+      });
     },
   );
 
@@ -313,22 +613,40 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       const newprovider = toProvider(provider) as AnimeProvider;
 
-      const data = await jikan.fetchAnimeProviderEpisodes(malId, newprovider);
+      const result = await jikan.fetchAnimeProviderEpisodes(malId, newprovider);
 
       let timecached: number;
-      const status = data.data?.status.toLowerCase().trim();
+      const status = result.data?.status.toLowerCase().trim();
       status === 'finished airing' ? (timecached = 24) : (timecached = 1);
       reply.header('Cache-Control', `s-maxage=${timecached * 60 * 60}, stale-while-revalidate=300`);
 
       const cacheKey = `jikan-provider-episodes-${malId}-${newprovider}`;
-      const cachedData = await redisGetCache(cacheKey);
+      const cachedData = (await redisGetCache(cacheKey)) as AnilistInfo;
       if (cachedData) {
-        return reply.send({ data: cachedData });
+        return reply.status(200).send({
+          data: cachedData.data,
+          providerEpisodes: cachedData.providerEpisodes,
+        });
+      }
+      if ('error' in result) {
+        return reply.status(500).send({
+          error: result.error,
+          data: result.data,
+          providerEpisodes: result.providerEpisodes,
+        });
       }
 
-      if (data.success === true && data.providerEpisodes.length > 0) await redisSetCache(cacheKey, data, timecached);
-
-      return reply.send({ data });
+      if (result.data !== null && result.providerEpisodes.length > 0) {
+        const cacheableData = {
+          data: result.data,
+          providerEpisodes: result.providerEpisodes,
+        };
+        await redisSetCache(cacheKey, cacheableData, timecached);
+      }
+      return reply.status(200).send({
+        data: result.data,
+        providerEpisodes: result.providerEpisodes,
+      });
     },
   );
 }

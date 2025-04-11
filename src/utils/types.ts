@@ -65,7 +65,7 @@ export type AnilistRepetitive = {
 };
 export type AnilistData = {
   malId: number;
-  anilistId: number;
+  anilistId?: number;
   image: string;
   color: string;
   bannerImage: string;
