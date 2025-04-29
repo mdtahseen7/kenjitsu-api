@@ -100,7 +100,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const episodeId = String(request.params.episodeId);
       const category = request.query.category || 'sub';
-      const server = request.query.server || 'hd-1';
+      const server = request.query.server || 'hd-2';
 
       const newserver = toZoroServers(server);
       const newcategory = toCategory(category);
