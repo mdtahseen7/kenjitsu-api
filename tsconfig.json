@@ -1,22 +1,17 @@
 {
-  "include": ["src","api"],
+  "include": ["src"],
   "exclude": ["**/*.test.ts","node_modules"],
   "compilerOptions": {
     "target": "ESNext" ,
     "module": "ESNext" ,
-    "moduleResolution": "node", 
+    "moduleResolution": "node10", 
     "noEmit": false,
     "emitDeclarationOnly": false,
     "isolatedModules": false,
     "esModuleInterop": true ,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "dist",
-    "rootDir": "./",
     "strict": true,
     "noUncheckedIndexedAccess": true, 
-    "declaration": true, /// switch to false for prod
-    "skipLibCheck": true ,
-    "sourceMap": true,/// switch to false for prod
     "lib": ["ESNext"],
     
   }

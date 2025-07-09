@@ -7,8 +7,8 @@ import AnimekaiRoutes from './routes/anime/animekai.js';
 import HianimeRoutes from './routes/anime/hianime.js';
 import AnilistRoutes from './routes/meta/anilist.js';
 import JikanRoutes from './routes/meta/jikan.js';
-import { purgeCache } from './middleware/cache.js';
-// purgeCache();
+import { FlixHQRoutes } from './routes/tv/flixhq.js';
+
 const app = Fastify({ maxParamLength: 1000, logger: true });
 async function FastifyApp() {
   //CORS
@@ -34,7 +34,7 @@ async function FastifyApp() {
   app.register(JikanRoutes, { prefix: '/api/jikan' });
   app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
   app.register(HianimeRoutes, { prefix: '/api/hianime' });
-
+  app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
   // Server start
   try {
     const port = parseInt(process.env.PORT || '3000', 10);

@@ -6,6 +6,7 @@ export interface FastifyParams {
   malId?: string;
   episodeId?: string;
   episodeNumber?: string;
+  mediaId?: string;
 }
 export interface FastifyQuery {
   q?: string;
