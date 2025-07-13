@@ -105,15 +105,18 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
       const newserver = toZoroServers(server);
       const newcategory = toCategory(category);
 
-      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=180');
+      reply.header(
+        'Cache-Control',
+        'public, s-maxage=300, stale-while-revalidate=180, no-store, no-cache, must-revalidate, proxy-revalidate',
+      );
 
       const result = await zoro.fetchSources(episodeId, newserver, newcategory);
 
       if ('error' in result) {
         return reply.status(500).send({
           error: result.error,
-          headers: result.headers,
-          data: result.data,
+          headers: result.headers, // Consider if you want to expose internal headers on error
+          data: result.data, // Consider if you want to expose internal data on error
         });
       }
       return reply.status(200).send({ headers: result.headers, data: result.data });

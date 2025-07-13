@@ -13,7 +13,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  // api/jikan/search?q=string&page=number&perPage=number
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
