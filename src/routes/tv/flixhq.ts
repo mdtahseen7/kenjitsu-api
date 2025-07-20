@@ -1,7 +1,7 @@
 import { FlixHQ } from 'hakai-extensions';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { FastifyParams, FastifyQuery } from '../../utils/types';
-import { toFlixServers } from '../../utils/normalize';
+import { FastifyParams, FastifyQuery } from '../../utils/types.js';
+import { toFlixServers } from '../../utils/normalize.js';
 
 const flixhq = new FlixHQ();
 
