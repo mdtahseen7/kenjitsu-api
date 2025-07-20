@@ -1,62 +1,59 @@
-name: Dependency Update to trigger new deployment    ## maybe removed in the future who knows
+name: Dependency Update to trigger new deployment
 
 on:
   push:
     branches:
       - main
   repository_dispatch:
-    types: [dependency-updated]
+    types: [dependency-updated] 
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write 
       pull-requests: write
 
     steps:
-    - name: Checkout API Repository
-      uses: actions/checkout@v4
+      - name: Checkout API Repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Create Automated Commit for Dependency Update
         
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
 
-    - name: Install pnpm
-      run: npm install -g pnpm
 
-    - name: Install dependencies
-      run: pnpm install --no-frozen-lockfile
+          DEPENDENCY_SHA="${{ github.event.client_payload.sha }}"
+          DEPENDENCY_MESSAGE="${{ github.event.client_payload.message }}"
 
-  
-    # --- Create Automated Commit for Dependency Update ---
-    - name: Create Automated Commit for Dependency Update
-      if: github.event_name == 'repository_dispatch'
-      run: |
-        git config user.name "GitHub Actions Bot"
-        git config user.email "actions@github.com"
+          echo "Last dependency update: $(date -u +'%Y-%m-%dT%H:%M:%SZ') - SHA: $DEPENDENCY_SHA" > .dependency_last_updated_info
 
-        DEPENDENCY_SHA=$(echo '${{ github.event.client_payload.sha }}' | jq -r '.')
-        DEPENDENCY_MESSAGE=$(echo '${{ github.event.client_payload.message }}' | jq -r '.')
+          COMMIT_MESSAGE="chore(deps): Trigger deploy for dependency update
 
-        echo "Last dependency update: $(date -u +'%Y-%m-%dT%H:%M:%SZ') - SHA: $DEPENDENCY_SHA" > .dependency_last_updated_info
+          This deployment was automatically triggered due to a new commit in a
+          related dependency repository.
 
-        COMMIT_MESSAGE="chore(deps): Trigger deploy for dependency update
+          Dependency Commit SHA: ${DEPENDENCY_SHA}
+          Dependency Commit Message: ${DEPENDENCY_MESSAGE}"
 
-        This deployment was automatically triggered due to a new commit in a
-        related dependency repository.
+          git add .dependency_last_updated_info
+          git commit -m "$COMMIT_MESSAGE" || echo "No changes to commit for dependency info."
 
-        Dependency Commit SHA: ${DEPENDENCY_SHA}
-        Dependency Commit Message: ${DEPENDENCY_MESSAGE}"
-
-        git add .dependency_last_updated_info
-        git commit -m "$COMMIT_MESSAGE"
-
-        git push origin main
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # --- DEPLOYMENT STEPS GO HERE ---
-    
+        
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
