@@ -1,9 +1,10 @@
 export interface FastifyParams {
+  tmdbId?: number;
   season?: string;
   year?: string;
   animeId?: string;
-  anilistId?: string;
-  malId?: string;
+  anilistId?: number;
+  malId?: number;
   episodeId?: string;
   episodeNumber?: string;
   mediaId?: string;
@@ -11,12 +12,13 @@ export interface FastifyParams {
 export interface FastifyQuery {
   q?: string;
   type?: string;
-  page?: string;
-  perPage?: string;
+  page?: number;
+  perPage?: number;
   format?: string;
   category?: string;
   server?: string;
   provider?: string;
+  timeWindow?: string;
 }
 type KaiEpisodes = {
   episodeNumber: number;

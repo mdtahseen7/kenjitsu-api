@@ -9,7 +9,6 @@ const Format = {
 
 type Format = (typeof Format)[keyof typeof Format];
 
-// Function to normalize and validate the input
 export function toFormatAnilist(input: string): Format {
   if (!input) {
     input = Format.TV;
@@ -90,7 +89,7 @@ export function toZoroServers(input: string): ZoroServers {
 const AnimeProviderApi = {
   HiAnime: 'hianime',
   // Animekai: 'animekai',
-} as const; // Ensures values are readonly
+} as const;
 
 export type AnimeProviderApi = (typeof AnimeProviderApi)[keyof typeof AnimeProviderApi]; // Extracts type
 
@@ -121,8 +120,8 @@ export function toSearchType(input: string): SearchType {
     return normalizedInput as SearchType;
   }
 
-  const validSearchType = Object.values(StreamingServers).join(' or ');
-  throw new Error(`Invalid input: ${input}. Required inputs are: ${validSearchType}`);
+  const validSearchType = Object.values(SearchType).join(' or ');
+  throw new Error(`Invalid input: ${input}. Required input values are: ${validSearchType}`);
 }
 export const StreamingServers = {
   Upcloud: 'upcloud',
@@ -143,5 +142,25 @@ export function toFlixServers(input: string): StreamingServers {
   }
 
   const validServer = Object.values(StreamingServers).join(' or ');
-  throw new Error(`Invalid input: ${input}. Required inputs are: ${validServer}`);
+  throw new Error(`Invalid input: ${input}. Required server inputs are: ${validServer}`);
+}
+
+export const timeWindow = {
+  Week: 'week',
+  Day: 'day',
+} as const;
+export type timeWindow = (typeof timeWindow)[keyof typeof timeWindow];
+export function toTimeWindow(input: string): timeWindow {
+  if (!input) {
+    return timeWindow.Week;
+  }
+
+  const normalizedInput = input.toLowerCase().trim();
+
+  if (Object.values(timeWindow).some(provider => provider === normalizedInput)) {
+    return normalizedInput as timeWindow;
+  }
+
+  const validWindow = Object.values(timeWindow).join(' or ');
+  throw new Error(`Invalid input: ${input}. Required inputs are: ${validWindow}`);
 }

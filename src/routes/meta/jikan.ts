@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { Format, Jikan, Seasons } from 'hakai-extensions';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 import type { FastifyQuery, FastifyParams, AnilistInfo, AnilistRepetitive } from '../../utils/types.js';
-import { type AnimeProviderApi, toProvider } from '../../utils/normalize.js';
+import { type AnimeProviderApi, toProvider } from '../../utils/utils.js';
 
 const jikan = new Jikan();
 
@@ -31,13 +31,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -50,7 +50,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  // api/jikan/info/:malId
   fastify.get('/info/:malId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const malId = Number(request.params.malId);
 
@@ -62,8 +61,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
         data: result.data,
+        error: result.error,
       });
     }
     if (cachedData) {
@@ -84,7 +83,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  // api/jikan/top-airing?page=number&perPage=number&format=format
   fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
@@ -109,13 +107,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.fetchTopAiring(page, perPage, format);
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     if (result.data.length > 0) {
@@ -140,7 +138,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/jikan/most-popular?page=number&perPage=number&format=format
   fastify.get('/most-popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
@@ -167,13 +164,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     if (result.data.length > 0) {
@@ -198,7 +195,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/jikan/upcoming?page=number&perPage=number
   fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
@@ -237,13 +233,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -256,7 +252,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/jikan/movies?page=number&perPage=number
   fastify.get('/movies', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
@@ -294,13 +289,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -313,7 +308,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/jikan/seasons/:season/:year?page=number&perPage=number
   fastify.get(
     '/seasons/:season/:year',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
@@ -356,13 +350,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
-          data: result.data,
           hasNextPage: result.hasNextPage,
           currentPage: result.currentPage,
           total: result.total,
           perPage: result.perPage,
           lastPage: result.lastPage,
+          data: result.data,
+          error: result.error,
         });
       }
       return reply.status(200).send({
@@ -376,7 +370,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     },
   );
 
-  //api/jikan/current-season?page=number&perPage=number&format=string
   fastify.get('/current-season', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const format = (request.query.format as Format) || 'TV';
     const page = Number(request.query.page) || 1;
@@ -415,13 +408,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -434,7 +427,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/jikan/next-season?page=number&perPage=number&format=string
   fastify.get('/next-season', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const format = (request.query.format as Format) || 'TV';
     const page = Number(request.query.page) || 1;
@@ -473,13 +465,13 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -492,7 +484,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/jikan/characters/:malId
   fastify.get('/characters/:malId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const malId = Number(request.params.malId);
 
@@ -502,8 +493,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
         data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -511,7 +502,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     });
   });
 
-  //api/jikan/mal-episodes/:malId?page=number
   fastify.get(
     '/mal-episodes/:malId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -523,8 +513,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const result = await jikan.fetchMalEpisodes(malId, page);
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
           data: result.data,
+          error: result.error,
         });
       }
       return reply.status(200).send({
@@ -533,7 +523,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     },
   );
 
-  //api/jikan/mal-episode-info/:id/:episodeNumber
   fastify.get(
     '/mal-episode-info/:malId/:episodeNumber',
     async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
@@ -545,8 +534,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const result = await jikan.fetchMalEpisodeInfo(malId, episodeNumber);
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
           data: result.data,
+          error: result.error,
         });
       }
       return reply.status(200).send({
@@ -555,7 +544,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     },
   );
 
-  //api/jikan/get-provider/:malId?provider=string
   fastify.get(
     '/get-provider/:malId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
@@ -574,9 +562,9 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const cacheKey = `jikan-provider-id-${malId}-${newprovider}`;
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
           data: result.data,
           animeProvider: result.animeProvider,
+          error: result.error,
         });
       }
 
@@ -603,7 +591,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     },
   );
 
-  //api/jikan/provider-episodes/:malId?provider=string
   fastify.get(
     '/provider-episodes/:malId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
@@ -629,9 +616,9 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       }
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
           data: result.data,
           providerEpisodes: result.providerEpisodes,
+          error: result.error,
         });
       }
 

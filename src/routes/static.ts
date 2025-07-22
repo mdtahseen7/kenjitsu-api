@@ -2,7 +2,6 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { promises as fs } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,11 +18,11 @@ export default async function StaticRoutes(fastify: FastifyInstance) {
     },
   });
 
-  fastify.get('/', async (request, reply) => {
+  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.sendFile('index.html');
   });
 
-  fastify.get('/favicon.ico', async (request, reply: FastifyReply) => {
+  fastify.get('/favicon.ico', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.redirect('/favicon.png', 301);
   });
 }

@@ -1,34 +1,36 @@
 import 'dotenv/config';
-import { notFoundRateLimiter, ratelimitOptions, ratelimitPlugin } from './config/ratelimit.js';
-import Fastify from 'fastify';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import StaticRoutes from './routes/static.js';
 import AnimekaiRoutes from './routes/anime/animekai.js';
 import HianimeRoutes from './routes/anime/hianime.js';
 import AnilistRoutes from './routes/meta/anilist.js';
 import JikanRoutes from './routes/meta/jikan.js';
-import { FlixHQRoutes } from './routes/tv/flixhq.js';
+import FlixHQRoutes from './routes/tv/flixhq.js';
+import TheMovieDatabaseRoutes from './routes/meta/tmdb.js';
+import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 
 const app = Fastify({ maxParamLength: 1000, logger: true });
 
 async function FastifyApp() {
+  app.register(rateLimitPlugIn, ratelimitOptions);
+
+  app.setNotFoundHandler(function (request: FastifyRequest, reply: FastifyReply) {
+    reply.code(404).send({ message: 'Stop go read the docs', url: 'https://github.com/middlegear/documentation' });
+  });
+
   await app.register(fastifyCors, {
     origin: '*',
     methods: 'GET',
   });
 
-  app.register(StaticRoutes);
-
-  // Rate limiting
-  await app.register(ratelimitPlugin, ratelimitOptions);
-  await app.register(ratelimitPlugin, notFoundRateLimiter);
-  //
-  app.register(AnilistRoutes, { prefix: '/api/anilist' });
-  app.register(JikanRoutes, { prefix: '/api/jikan' });
-  app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
-  app.register(HianimeRoutes, { prefix: '/api/hianime' });
-  app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
-
+  await app.register(StaticRoutes);
+  await app.register(AnilistRoutes, { prefix: '/api/anilist' });
+  await app.register(JikanRoutes, { prefix: '/api/jikan' });
+  await app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
+  await app.register(HianimeRoutes, { prefix: '/api/hianime' });
+  await app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
+  await app.register(TheMovieDatabaseRoutes, { prefix: 'api/tmdb' });
   try {
     const port = Number.parseInt(process.env.PORT || '3000', 10);
     const host = process.env.HOSTNAME || '0.0.0.0';
@@ -45,7 +47,7 @@ async function FastifyApp() {
 
 FastifyApp();
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: FastifyRequest, res: FastifyReply) {
   await app.ready();
   app.server.emit('request', req, res);
 }

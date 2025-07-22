@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { HiAnime } from 'hakai-extensions';
-import { toZoroServers, toCategory } from '../../utils/normalize.js';
+import { toZoroServers, toCategory } from '../../utils/utils.js';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
 
 const zoro = new HiAnime();

@@ -1,11 +1,11 @@
 import { FlixHQ } from 'hakai-extensions';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
-import { toFlixServers } from '../../utils/normalize.js';
+import { toFlixServers } from '../../utils/utils.js';
 
 const flixhq = new FlixHQ();
 
-export async function FlixHQRoutes(fastify: FastifyInstance) {
+export default async function FlixHQRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     reply.send({ message: 'Welcome to FlixHQ provider' });
   });

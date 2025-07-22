@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Anilist } from 'hakai-extensions';
-import { toFormatAnilist, type AnimeProviderApi, toAnilistSeasons, toProvider } from '../../utils/normalize.js';
+import { toFormatAnilist, type AnimeProviderApi, toAnilistSeasons, toProvider } from '../../utils/utils.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 import type { AnilistInfo, AnilistRepetitive, FastifyParams, FastifyQuery } from '../../utils/types.js';
 
@@ -27,13 +27,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const result = await anilist.search(q, page, perPage);
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -57,8 +57,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
         data: result.data,
+        error: result.error,
       });
     }
 
@@ -105,13 +105,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const result = await anilist.fetchAiring(page, perPage);
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     if (result.data.length > 0) {
@@ -137,7 +137,6 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     });
   });
 
-  // api/anilist/most-popular?format=string&page=number&perPage=number
   fastify.get('/most-popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const format = request.query.format || 'TV';
     const page = Number(request.query.page) || 1;
@@ -166,13 +165,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     if (result.data.length > 0) {
@@ -225,13 +224,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     if (result.data.length > 0) {
@@ -281,13 +280,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     if (result.data.length > 0) {
@@ -354,13 +353,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
-        data: result.data,
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
         total: result.total,
         perPage: result.perPage,
         lastPage: result.lastPage,
+        data: result.data,
+        error: result.error,
       });
     }
     if (result.data.length > 0) {
@@ -393,8 +392,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     const result = await anilist.fetchRelatedAnime(anilistId);
     if ('error' in result) {
       return reply.status(500).send({
-        error: result.error,
         data: result.data,
+        error: result.error,
       });
     }
     return reply.status(200).send({
@@ -421,13 +420,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
-          data: result.data,
           hasNextPage: result.hasNextPage,
           currentPage: result.currentPage,
           total: result.total,
           perPage: result.perPage,
           lastPage: result.lastPage,
+          data: result.data,
+          error: result.error,
         });
       }
       return reply.status(200).send({
@@ -454,9 +453,9 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       const result = await anilist.fetchProviderAnimeId(anilistId, newprovider);
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
           data: result.data,
           animeProvider: result.animeProvider,
+          error: result.error,
         });
       }
       const cacheKey = `anilist-provider-id-${anilistId}-${newprovider}`;
@@ -511,9 +510,9 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       }
       if ('error' in result) {
         return reply.status(500).send({
-          error: result.error,
           data: result.data,
           providerEpisodes: result.providerEpisodes,
+          error: result.error,
         });
       }
 

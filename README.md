@@ -1,8 +1,4 @@
 
-<p align="center">
-  <img src="https://m3jz13d05b.ufs.sh/f/dLgmbGNJLXerMjDNawBovlI3sdb2nkrUQc6OBfxYZGS19XE7" alt="Beerus the Destroyer" width="400">
-</p>
-
 <h1 align="center">Hakai API</h1>  
 <p align = "center">A RESTful api serving anime, tv and movies metadata.</p>
 

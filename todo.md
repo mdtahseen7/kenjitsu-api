@@ -1,2 +1,2 @@
-1. complete routes
-2. fix the rate limiter
+1. complete routes.
+2. Update docs

@@ -1,19 +1,19 @@
 import { TheMovieDatabase } from 'hakai-extensions';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { FastifyInstance } from 'fastify';
-import type { FastifyQuery } from '../../utils/types.js';
-import { SearchType, toSearchType } from '../../utils/normalize.js';
+import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
+import { SearchType, toSearchType, toTimeWindow } from '../../utils/utils.js';
 
 const tmdb = new TheMovieDatabase();
 
-export async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
+export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({ message: 'Welcome to The TheMovieDatabase provider' });
   });
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const q = String(request.query.q);
-    const page = Number(request.query.page);
+    const page = Number(request.query.page) || 1;
     const type = String(request.query.type);
 
     const validateSearchType = toSearchType(type);
@@ -21,5 +21,268 @@ export async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     validateSearchType === SearchType.Movie
       ? (result = await tmdb.searchMovies(q, page))
       : (result = await tmdb.searchShows(q, page));
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+        totalResults: result.totalResults,
+        data: result.data,
+        error: result.error,
+      });
+    }
+
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      totalPages: result.totalPages,
+      totalResults: result.totalResults,
+      data: result.data,
+    });
+  });
+
+  fastify.get(
+    '/info/:mediaId',
+    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+      const mediaId = Number(request.params.mediaId);
+      const type = String(request.query.type);
+
+      const validateType = toSearchType(type);
+      let result;
+      validateType === SearchType.Movie
+        ? (result = await tmdb.fetchMovieInfo(mediaId))
+        : (result = await tmdb.fetchShowInfo(mediaId));
+
+      if ('error' in result && 'seasons' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          seasons: result.seasons,
+          error: result.error,
+        });
+      } else if ('error' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          error: result.error,
+        });
+      }
+
+      if ('seasons' in result && validateType === SearchType.TvShow) {
+        return reply.send({
+          data: result.data,
+          seasons: result.seasons,
+        });
+      } else
+        return reply.status(200).send({
+          data: result.data,
+        });
+    },
+  );
+
+  fastify.get('/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    const type = String(request.query.type);
+    const page = Number(request.query.page) || 1;
+    const timeWindow = request.query.timeWindow || 'week';
+    const validateType = toSearchType(type);
+    const validateWindow = toTimeWindow(timeWindow);
+    let result;
+    validateType === SearchType.Movie
+      ? (result = await tmdb.fetchTrendingMovies(validateWindow, page))
+      : (result = await tmdb.fetchTrendingTv(validateWindow, page));
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+        totalResults: result.totalResults,
+        data: result.data,
+        error: result.error,
+      });
+    }
+
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      totalPages: result.totalPages,
+      totalResults: result.totalResults,
+      data: result.data,
+    });
+  });
+
+  fastify.get('/popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    const type = String(request.query.type);
+    const page = Number(request.query.page) || 1;
+    const validateType = toSearchType(type);
+
+    let result;
+    validateType === SearchType.Movie
+      ? (result = await tmdb.fetchPopularMovies(page))
+      : (result = await tmdb.fetchPopularTv(page));
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+        totalResults: result.totalResults,
+        data: result.data,
+        error: result.error,
+      });
+    }
+
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      totalPages: result.totalPages,
+      totalResults: result.totalResults,
+      data: result.data,
+    });
+  });
+
+  fastify.get('/top', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    const page = Number(request.query.page) || 1;
+    const type = String(request.query.type);
+    const validateType = toSearchType(type);
+
+    let result;
+    validateType === SearchType.Movie
+      ? (result = await tmdb.fetchTopMovies(page))
+      : (result = await tmdb.fetchTopShows(page));
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+        totalResults: result.totalResults,
+        data: result.data,
+        error: result.error,
+      });
+    }
+
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      totalPages: result.totalPages,
+      totalResults: result.totalResults,
+      data: result.data,
+    });
+  });
+
+  fastify.get(
+    '/get-provider/:tmdbId',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      // const provider = String(request.query.provider) currently its only flixHQ will add more in the future
+      const tmdbId = Number(request.params.tmdbId);
+      const type = String(request.query.type);
+      const validateType = toSearchType(type);
+      let result;
+      validateType === SearchType.Movie
+        ? (result = await tmdb.fetchMovieProviderId(tmdbId))
+        : (result = await tmdb.fetchTvProviderId(tmdbId));
+
+      if ('error' in result && 'seasons' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          seasons: result.seasons,
+          providerResult: result.providerResult,
+          error: result.error,
+        });
+      } else if ('error' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          providerResult: result.providerResult,
+          error: result.error,
+        });
+      }
+
+      if ('seasons' in result && validateType === SearchType.TvShow) {
+        return reply.send({
+          data: result.data,
+          seasons: result.seasons,
+          providerResult: result.providerResult,
+        });
+      } else
+        return reply.status(200).send({
+          data: result.data,
+          providerResult: result.providerResult,
+        });
+    },
+  );
+
+  fastify.get('/airing-tv', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    const page = Number(request.query.page) || 1;
+
+    const result = await tmdb.fetchAiringTv(page);
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+        totalResults: result.totalResults,
+        data: result.data,
+        error: result.error,
+      });
+    }
+
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      totalPages: result.totalPages,
+      totalResults: result.totalResults,
+      data: result.data,
+    });
+  });
+
+  fastify.get('/releasing-movies', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    const page = Number(request.query.page) || 1;
+
+    const result = await tmdb.fetchReleasingMovies(page);
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+        totalResults: result.totalResults,
+        data: result.data,
+        error: result.error,
+      });
+    }
+
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      totalPages: result.totalPages,
+      totalResults: result.totalResults,
+      data: result.data,
+    });
+  });
+
+  fastify.get('/upcoming-movies', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    const page = Number(request.query.page) || 1;
+
+    const result = await tmdb.fetchUpcomingMovies(page);
+
+    if ('error' in result) {
+      return reply.status(500).send({
+        hasNextPage: result.hasNextPage,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages,
+        totalResults: result.totalResults,
+        data: result.data,
+        error: result.error,
+      });
+    }
+
+    return reply.status(200).send({
+      hasNextPage: result.hasNextPage,
+      currentPage: result.currentPage,
+      totalPages: result.totalPages,
+      totalResults: result.totalResults,
+      data: result.data,
+    });
   });
 }
