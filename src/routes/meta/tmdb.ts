@@ -15,8 +15,10 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     const q = String(request.query.q);
     const page = Number(request.query.page) || 1;
     const type = String(request.query.type);
-
     const validateSearchType = toSearchType(type);
+
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
     let result;
     validateSearchType === SearchType.Movie
       ? (result = await tmdb.searchMovies(q, page))
@@ -47,8 +49,10 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const mediaId = Number(request.params.mediaId);
       const type = String(request.query.type);
-
       const validateType = toSearchType(type);
+
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
       let result;
       validateType === SearchType.Movie
         ? (result = await tmdb.fetchMovieInfo(mediaId))
@@ -85,6 +89,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     const timeWindow = request.query.timeWindow || 'week';
     const validateType = toSearchType(type);
     const validateWindow = toTimeWindow(timeWindow);
+
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
     let result;
     validateType === SearchType.Movie
       ? (result = await tmdb.fetchTrendingMovies(validateWindow, page))
@@ -114,6 +121,8 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     const type = String(request.query.type);
     const page = Number(request.query.page) || 1;
     const validateType = toSearchType(type);
+
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     let result;
     validateType === SearchType.Movie
@@ -145,6 +154,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     const type = String(request.query.type);
     const validateType = toSearchType(type);
 
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
     let result;
     validateType === SearchType.Movie
       ? (result = await tmdb.fetchTopMovies(page))
@@ -177,6 +187,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       const tmdbId = Number(request.params.tmdbId);
       const type = String(request.query.type);
       const validateType = toSearchType(type);
+
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
       let result;
       validateType === SearchType.Movie
         ? (result = await tmdb.fetchMovieProviderId(tmdbId))
@@ -214,6 +227,8 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get('/airing-tv', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
 
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
     const result = await tmdb.fetchAiringTv(page);
 
     if ('error' in result) {
@@ -236,8 +251,56 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     });
   });
 
-  fastify.get('/releasing-movies', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get(
+    '/episodes/:tmdbId/:season',
+    async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+      const tmdbId = Number(request.params.tmdbId);
+      const season = Number(request.params.season);
+
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+      const result = await tmdb.fetchTvEpisodes(tmdbId, season);
+      if ('error' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          error: result.error,
+        });
+      }
+
+      return reply.status(200).send({
+        data: result.data,
+      });
+    },
+  );
+
+  fastify.get(
+    '/episode-info/:tmdbId/:seasonNumber/:episodeNumber',
+    async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+      const tmdbId = Number(request.params.tmdbId);
+      const season = Number(request.params.seasonNumber);
+      const episodeNumber = Number(request.params.episodeNumber);
+
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+      const result = await tmdb.fetchEpisodeInfo(tmdbId, season, episodeNumber);
+      if ('error' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          error: result.error,
+        });
+      }
+
+      return reply.status(200).send({
+        data: result.data,
+      });
+    },
+  );
+
+  ///this endpoint fetches releasing movies
+  fastify.get('/releasing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
+
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const result = await tmdb.fetchReleasingMovies(page);
 
@@ -260,9 +323,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       data: result.data,
     });
   });
-
-  fastify.get('/upcoming-movies', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  ////this endpoint fetches upcoming movies
+  fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
+
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const result = await tmdb.fetchUpcomingMovies(page);
 

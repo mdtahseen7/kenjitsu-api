@@ -6,10 +6,14 @@ export interface FastifyParams {
   anilistId?: number;
   malId?: number;
   episodeId?: string;
-  episodeNumber?: string;
+  episodeNumber?: number;
   mediaId?: string;
+  tvmazeId?: number;
+  seasonNumber?: number;
 }
 export interface FastifyQuery {
+  imdbId?: number;
+  tvdbId?: string;
   q?: string;
   type?: string;
   page?: number;
