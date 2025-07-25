@@ -9,6 +9,7 @@ import JikanRoutes from './routes/meta/jikan.js';
 import FlixHQRoutes from './routes/tv/flixhq.js';
 import TheMovieDatabaseRoutes from './routes/meta/tmdb.js';
 import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
+import TvMazeRoutes from './routes/meta/tvmaze.js';
 
 const app = Fastify({ maxParamLength: 1000, logger: true });
 
@@ -30,6 +31,7 @@ async function FastifyApp() {
   await app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
   await app.register(HianimeRoutes, { prefix: '/api/hianime' });
   await app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
+  await app.register(TvMazeRoutes, { prefix: '/api/tvmaze' });
   await app.register(TheMovieDatabaseRoutes, { prefix: 'api/tmdb' });
   try {
     const port = Number.parseInt(process.env.PORT || '3000', 10);
