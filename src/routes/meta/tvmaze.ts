@@ -70,7 +70,7 @@ export default async function TvMazeRoutes(fastify: FastifyInstance) {
   });
 
   //// lookup?imdbId =''
-  fastify.get('/lookup', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/lookup-imdb', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const imdbId = String(request.query.imdbId);
 
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
@@ -89,7 +89,7 @@ export default async function TvMazeRoutes(fastify: FastifyInstance) {
     });
   });
 
-  fastify.get('/lookup', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/lookup-tvdb', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const tvdbId = Number(request.query.tvdbId);
 
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
