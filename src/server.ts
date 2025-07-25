@@ -17,7 +17,7 @@ async function FastifyApp() {
   app.register(rateLimitPlugIn, ratelimitOptions);
 
   app.setNotFoundHandler(function (request: FastifyRequest, reply: FastifyReply) {
-    reply.code(404).send({ message: 'Stop go read the docs', url: 'https://github.com/middlegear/documentation' });
+    reply.code(404).send({ message: 'Stop go read', url: 'https://hakai-documentation.vercel.app' });
   });
 
   await app.register(fastifyCors, {
