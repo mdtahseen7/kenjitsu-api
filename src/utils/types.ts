@@ -1,4 +1,5 @@
 export interface FastifyParams {
+  episode: number;
   tmdbId?: number;
   season?: string;
   year?: string;
@@ -6,10 +7,8 @@ export interface FastifyParams {
   anilistId?: number;
   malId?: number;
   episodeId?: string;
-  episodeNumber?: number;
   mediaId?: string;
   tvmazeId?: number;
-  seasonNumber?: number;
 }
 export interface FastifyQuery {
   imdbId?: number;

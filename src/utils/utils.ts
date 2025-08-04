@@ -164,3 +164,24 @@ export function toTimeWindow(input: string): timeWindow {
   const validWindow = Object.values(timeWindow).join(' or ');
   throw new Error(`Invalid input: ${input}. Required inputs are: ${validWindow}`);
 }
+
+export const EmbedServers = {
+  CloudStream: 'cloudstream',
+  TwoEmbed: '2embed',
+  // SuperEmbed: 'superembed',
+} as const;
+export type EmbedServers = (typeof EmbedServers)[keyof typeof EmbedServers];
+export function toEmbedServers(input: string): EmbedServers {
+  if (!input) {
+    return EmbedServers.CloudStream;
+  }
+
+  const normalizedInput = input.toLowerCase().trim();
+
+  if (Object.values(EmbedServers).some(provider => provider === normalizedInput)) {
+    return normalizedInput as EmbedServers;
+  }
+
+  const validServer = Object.values(EmbedServers).join(' or ');
+  throw new Error(`Invalid input: ${input}. Required inputs are: ${validServer}`);
+}

@@ -2,7 +2,7 @@ import { TheMovieDatabase } from 'hakai-extensions';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { FastifyInstance } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
-import { SearchType, toSearchType, toTimeWindow } from '../../utils/utils.js';
+import { SearchType, toEmbedServers, toSearchType, toTimeWindow } from '../../utils/utils.js';
 
 const tmdb = new TheMovieDatabase();
 
@@ -274,11 +274,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get(
-    '/episode-info/:tmdbId/:seasonNumber/:episodeNumber',
+    '/episode-info/:tmdbId/:season/:episode',
     async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
       const tmdbId = Number(request.params.tmdbId);
-      const season = Number(request.params.seasonNumber);
-      const episodeNumber = Number(request.params.episodeNumber);
+      const season = Number(request.params.season);
+      const episodeNumber = Number(request.params.episode);
 
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
@@ -296,7 +296,6 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     },
   );
 
-  ///this endpoint fetches releasing movies
   fastify.get('/releasing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
 
@@ -323,7 +322,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       data: result.data,
     });
   });
-  ////this endpoint fetches upcoming movies
+
   fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
 
@@ -350,4 +349,52 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       data: result.data,
     });
   });
+
+  fastify.get(
+    '/watch-movie/:tmdbId',
+    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+      const tmdbId = Number(request.params.tmdbId);
+      const server = request.query.server || 'cloudstream';
+      const StreamingServers = toEmbedServers(server);
+
+      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+
+      const result = await tmdb.fetchMovieSources(tmdbId, StreamingServers);
+      if ('error' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          error: result.error,
+        });
+      }
+
+      return reply.status(200).send({
+        data: result.data,
+      });
+    },
+  );
+
+  fastify.get(
+    '/watch-tv/:tmdbId/:season/:episode',
+    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+      const tmdbId = Number(request.params.tmdbId);
+      const server = request.query.server || 'cloudstream';
+      const StreamingServers = toEmbedServers(server);
+      const seasonNumber = Number(request.params.season) || 1;
+      const episodeNumber = Number(request.params.episode) || 1;
+
+      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+
+      const result = await tmdb.fetchTvSources(tmdbId, seasonNumber, episodeNumber, StreamingServers);
+      if ('error' in result) {
+        return reply.status(500).send({
+          data: result.data,
+          error: result.error,
+        });
+      }
+
+      return reply.status(200).send({
+        data: result.data,
+      });
+    },
+  );
 }
