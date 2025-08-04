@@ -354,12 +354,13 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     '/watch-movie/:tmdbId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const tmdbId = Number(request.params.tmdbId);
-      const server = request.query.server as EmbedServers;
-      // const StreamingServers = toEmbedServers(server);
+      const server = request.query.server || 'cloudstream';
+
+      const StreamingServers = toEmbedServers(server);
 
       // reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
 
-      const result = await tmdb.fetchMovieSources(tmdbId, server);
+      const result = await tmdb.fetchMovieSources(tmdbId, StreamingServers);
       if ('error' in result) {
         return reply.status(500).send({
           data: result.data,
