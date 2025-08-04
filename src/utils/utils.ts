@@ -173,7 +173,7 @@ export const EmbedServers = {
 export type EmbedServers = (typeof EmbedServers)[keyof typeof EmbedServers];
 export function toEmbedServers(input: string): EmbedServers {
   if (!input) {
-    return EmbedServers.CloudStream;
+    return EmbedServers.TwoEmbed;
   }
 
   const normalizedInput = input.toLowerCase().trim();

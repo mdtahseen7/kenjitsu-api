@@ -354,7 +354,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     '/watch-movie/:tmdbId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const tmdbId = Number(request.params.tmdbId);
-      const server = request.query.server || 'cloudstream';
+      const server = request.query.server || '2embed';
       const StreamingServers = toEmbedServers(server);
 
       reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
