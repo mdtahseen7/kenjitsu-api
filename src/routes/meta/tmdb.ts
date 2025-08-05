@@ -378,14 +378,13 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     '/watch-tv/:tmdbId/:season/:episode',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const tmdbId = Number(request.params.tmdbId);
-      const server = request.query.server || 'cloudstream';
-      const StreamingServers = toEmbedServers(server);
+
       const seasonNumber = Number(request.params.season) || 1;
       const episodeNumber = Number(request.params.episode) || 1;
 
       reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
 
-      const result = await tmdb.fetchTvSources(tmdbId, seasonNumber, episodeNumber, StreamingServers);
+      const result = await tmdb.fetchTvSources(tmdbId, seasonNumber, episodeNumber);
       if ('error' in result) {
         return reply.status(500).send({
           data: result.data,

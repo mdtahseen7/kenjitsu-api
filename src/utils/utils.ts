@@ -167,13 +167,13 @@ export function toTimeWindow(input: string): timeWindow {
 
 export const EmbedServers = {
   CloudStream: 'cloudstream',
-  // TwoEmbed: '2embed',
+  TwoEmbed: '2embed',
   // SuperEmbed: 'superembed',
 } as const;
 export type EmbedServers = (typeof EmbedServers)[keyof typeof EmbedServers];
 export function toEmbedServers(input: string): EmbedServers {
   if (!input) {
-    return EmbedServers.TwoEmbed;
+    return EmbedServers.CloudStream;
   }
 
   const normalizedInput = input.toLowerCase().trim();
