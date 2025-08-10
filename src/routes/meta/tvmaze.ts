@@ -89,24 +89,6 @@ export default async function TvMazeRoutes(fastify: FastifyInstance) {
     });
   });
 
-  fastify.get('/lookup-tvdb', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const tvdbId = Number(request.query.tvdbId);
-
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const result = await tvmaze.searchbyTvDbId(tvdbId);
-    if ('error' in result) {
-      return reply.status(500).send({
-        data: result.data,
-        error: result.error,
-      });
-    }
-
-    return reply.status(200).send({
-      data: result.data,
-    });
-  });
-
   fastify.get(
     '/external-databases/:tvmazeId',
     async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {

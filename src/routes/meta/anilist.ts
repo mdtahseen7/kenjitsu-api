@@ -402,10 +402,10 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get(
-    '/seasons/:season/:year',
+    '/season',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      const season = String(request.params.season);
-      const year = Number(request.params.year);
+      const season = String(request.query.season);
+      const year = Number(request.query.year);
       const format = request.query.format || 'TV';
       const page = Number(request.query.page) || 1;
       let perPage = Number(request.query.perPage) || 20;

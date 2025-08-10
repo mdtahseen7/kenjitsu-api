@@ -309,10 +309,10 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get(
-    '/seasons/:season/:year',
+    '/season',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      const season = request.params.season as Seasons;
-      const year = Number(request.params.year);
+      const season = request.query.season as Seasons;
+      const year = Number(request.query.year);
       const format = (request.query.format as Format) || 'TV';
       const page = Number(request.query.page) || 1;
       let perPage = Number(request.query.perPage) || 20;
@@ -503,7 +503,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get(
-    '/mal-episodes/:malId',
+    '/episodes/:malId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const malId = Number(request.params.malId);
       const page = Number(request.query.page) || 1;
@@ -524,10 +524,10 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get(
-    '/mal-episode-info/:malId/:episode',
-    async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    '/episode-info/:malId',
+    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const malId = Number(request.params.malId);
-      const episodeNumber = Number(request.params.episode);
+      const episodeNumber = Number(request.query.episode);
 
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
