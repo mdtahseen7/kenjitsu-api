@@ -510,7 +510,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
-      const result = await jikan.fetchMalEpisodes(malId, page);
+      const result = await jikan.fetchEpisodes(malId, page);
       if ('error' in result) {
         return reply.status(500).send({
           data: result.data,
@@ -531,7 +531,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const result = await jikan.fetchMalEpisodeInfo(malId, episodeNumber);
+      const result = await jikan.fetchEpisodeInfo(malId, episodeNumber);
       if ('error' in result) {
         return reply.status(500).send({
           data: result.data,

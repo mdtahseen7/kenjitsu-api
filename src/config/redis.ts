@@ -24,7 +24,7 @@ export async function checkRedis() {
 
   try {
     const pong = await redis.ping();
-    console.log('✅ Redis Connection Successful');
+    console.log('✅ Redis Connection Successful', pong);
   } catch (err) {
     console.error('❌ Redis Connection Failed:', err);
   }

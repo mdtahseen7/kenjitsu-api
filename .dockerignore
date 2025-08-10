@@ -1,16 +1,23 @@
-env.example
-.env
-.github
-.gitignore
-.git
-tests
-.prettierignore
-.prettierrc.json
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Ignore build and dependency directories
 node_modules
-LICENSE
-README.md
-todo.md
+dist
+build
+.next
 
+# Ignore dot files and directories that aren't needed
+.env
+.env.*
+.git
+.gitignore
+.github
+.vscode
+
+# Ignore lock files and temporary files
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Ignore documentation
+README.md
+LICENSE
+tests

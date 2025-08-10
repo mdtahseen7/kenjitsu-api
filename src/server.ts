@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+
 import StaticRoutes from './routes/static.js';
 import AnimekaiRoutes from './routes/anime/animekai.js';
 import HianimeRoutes from './routes/anime/hianime.js';
@@ -11,12 +12,18 @@ import TvMazeRoutes from './routes/meta/tvmaze.js';
 import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 import fastifyCors, { corsOptions } from './config/cors.js';
 
-const app = Fastify({ maxParamLength: 1000, logger: true });
+const app = Fastify({
+  maxParamLength: 1000,
+  logger: { level: 'info' },
+});
 
 async function FastifyApp() {
   app.register(rateLimitPlugIn, ratelimitOptions);
-  app.setNotFoundHandler(function (request: FastifyRequest, reply: FastifyReply) {
-    reply.code(404).send({ message: 'Stop go read', url: 'https://hakai-documentation.vercel.app' });
+  app.setNotFoundHandler((request: FastifyRequest, reply: FastifyReply) => {
+    reply.code(404).send({
+      message: 'Stop go read the docs',
+      url: 'https://hakai-documentation.vercel.app',
+    });
   });
 
   await app.register(fastifyCors, corsOptions);
@@ -29,16 +36,21 @@ async function FastifyApp() {
   await app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
   await app.register(TvMazeRoutes, { prefix: '/api/tvmaze' });
   await app.register(TheMovieDatabaseRoutes, { prefix: 'api/tmdb' });
+
   try {
-    const port = Number.parseInt(process.env.PORT || '3000', 10);
+    const port = parseInt(process.env.PORT || '3000', 10);
     const host = process.env.HOSTNAME || '0.0.0.0';
+
     if (isNaN(port)) {
-      app.log.error('Invalid PORT environment variable');
+      console.error('Invalid PORT environment variable');
       process.exit(1);
     }
+
     await app.listen({ host, port });
+
+    console.log(`✅  Server is running at : http://localhost:${port}`);
   } catch (err) {
-    app.log.error(`Server startup error: ${err}`);
+    console.error(`Server startup error:`, err);
     process.exit(1);
   }
 }
