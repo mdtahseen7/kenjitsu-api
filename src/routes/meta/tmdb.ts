@@ -13,6 +13,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const q = String(request.query.q);
+    if (!q.length) {
+      return reply.status(400).send({ error: 'Query string cannot be empty' });
+    }
     const page = Number(request.query.page) || 1;
     const type = String(request.query.type);
     const validateSearchType = toSearchType(type);

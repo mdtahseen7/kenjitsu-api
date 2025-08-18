@@ -12,7 +12,9 @@ export default async function TvMazeRoutes(fastify: FastifyInstance) {
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const query = String(request.query.q);
-
+    if (!query.length) {
+      return reply.status(400).send({ error: 'Query string cannot be empty' });
+    }
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const result = await tvmaze.search(query);

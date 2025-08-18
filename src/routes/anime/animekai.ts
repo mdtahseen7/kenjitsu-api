@@ -17,8 +17,12 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
     q = q.replace(/[^\w\s\-_.]/g, '');
+
     if (q.length > 100) {
       return reply.status(400).send({ error: 'Query too long' });
+    }
+    if (!q.length) {
+      return reply.status(400).send({ error: 'Query string cannot be empty' });
     }
 
     const page = Number(request.query.page) || 1;

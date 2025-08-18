@@ -18,6 +18,11 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
     q = q.replace(/[^\w\s\-_.]/g, '');
+
+    if (!q.length) {
+      return reply.status(400).send({ error: 'Query string cannot be empty' });
+    }
+
     if (q.length > 100) {
       return reply.status(400).send({ error: 'Query too long' });
     }
