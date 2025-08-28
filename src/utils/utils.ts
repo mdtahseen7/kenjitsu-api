@@ -50,6 +50,7 @@ export function toAnilistSeasons(input: string): Seasons {
 const SubOrDub = {
   SUB: 'sub',
   DUB: 'dub',
+  RAW: 'raw',
 } as const;
 type SubOrDub = (typeof SubOrDub)[keyof typeof SubOrDub];
 
