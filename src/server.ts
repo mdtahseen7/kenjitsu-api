@@ -12,47 +12,9 @@ import TvMazeRoutes from './routes/meta/tvmaze.js';
 import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 import fastifyCors, { corsOptions } from './config/cors.js';
 
-import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
-
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  integrations: [nodeProfilingIntegration()],
-  enableLogs: true,
-  sendDefaultPii: true,
-  beforeSend: (event, hint) => {
-    const req = (hint.originalException as any)?.request;
-
-    if (req) {
-      const forwarded = req.headers?.['x-forwarded-for'];
-      const realIp = typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : req.ip;
-
-      event.request = {
-        method: req.method,
-        url: req.url,
-        headers: req.headers,
-      };
-
-      event.user = {
-        ip_address: realIp,
-      };
-
-      event.extra = {
-        ...event.extra,
-        forwardedFor: forwarded,
-      };
-    }
-
-    return event;
-  },
-});
-
 const app = Fastify({
   logger: { level: 'info' },
 });
-
-// Hook Sentry into Fastify error lifecycle
-Sentry.setupFastifyErrorHandler(app);
 
 async function FastifyApp() {
   app.register(rateLimitPlugIn, ratelimitOptions);
