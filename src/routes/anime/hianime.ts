@@ -448,7 +448,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
       const newserver = toZoroServers(server);
       const newcategory = toCategory(category);
 
-      reply.header('Cache-Control', 's-maxage=420, stale-while-revalidate=60');
+      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
 
       const result = await zoro.fetchSources(episodeId, newserver, newcategory);
 
