@@ -8,7 +8,7 @@ import AnilistRoutes from './routes/meta/anilist.js';
 import JikanRoutes from './routes/meta/jikan.js';
 import FlixHQRoutes from './routes/tv/flixhq.js';
 import TheMovieDatabaseRoutes from './routes/meta/tmdb.js';
-import TvMazeRoutes from './routes/meta/tvmaze.js';
+
 import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 import fastifyCors, { corsOptions } from './config/cors.js';
 
@@ -34,7 +34,7 @@ async function FastifyApp() {
   // await app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
   await app.register(HianimeRoutes, { prefix: '/api/hianime' });
   await app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
-  await app.register(TvMazeRoutes, { prefix: '/api/tvmaze' });
+
   await app.register(TheMovieDatabaseRoutes, { prefix: '/api/tmdb' });
 
   try {
