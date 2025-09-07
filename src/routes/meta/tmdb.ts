@@ -24,14 +24,14 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
     let result;
     validateSearchType === SearchType.Movie
-      ? (result = await tmdb.searchMovies(q, page))
+      ? (result = await tmdb.searchMovie(q, page))
       : (result = await tmdb.searchShows(q, page));
 
     if ('error' in result) {
       return reply.status(500).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
-        totalPages: result.totalPages,
+        lastPage: result.lastPage,
         totalResults: result.totalResults,
         data: result.data,
         error: result.error,
@@ -41,7 +41,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
-      totalPages: result.totalPages,
+      lastPage: result.lastPage,
       totalResults: result.totalResults,
       data: result.data,
     });
@@ -104,7 +104,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
-        totalPages: result.totalPages,
+        lastPage: result.lastPage,
         totalResults: result.totalResults,
         data: result.data,
         error: result.error,
@@ -114,7 +114,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
-      totalPages: result.totalPages,
+      lastPage: result.lastPage,
       totalResults: result.totalResults,
       data: result.data,
     });
@@ -136,7 +136,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
-        totalPages: result.totalPages,
+        lastPage: result.lastPage,
         totalResults: result.totalResults,
         data: result.data,
         error: result.error,
@@ -146,7 +146,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
-      totalPages: result.totalPages,
+      lastPage: result.lastPage,
       totalResults: result.totalResults,
       data: result.data,
     });
@@ -167,7 +167,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
-        totalPages: result.totalPages,
+        lastPage: result.lastPage,
         totalResults: result.totalResults,
         data: result.data,
         error: result.error,
@@ -177,7 +177,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
-      totalPages: result.totalPages,
+      lastPage: result.lastPage,
       totalResults: result.totalResults,
       data: result.data,
     });
@@ -202,13 +202,13 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         return reply.status(500).send({
           data: result.data,
           seasons: result.seasons,
-          providerResult: result.providerResult,
+          provider: result.provider,
           error: result.error,
         });
       } else if ('error' in result) {
         return reply.status(500).send({
           data: result.data,
-          providerResult: result.providerResult,
+          provider: result.provider,
           error: result.error,
         });
       }
@@ -217,12 +217,12 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         return reply.send({
           data: result.data,
           seasons: result.seasons,
-          providerResult: result.providerResult,
+          providerResult: result.provider,
         });
       } else
         return reply.status(200).send({
           data: result.data,
-          providerResult: result.providerResult,
+          provider: result.provider,
         });
     },
   );
@@ -238,7 +238,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
-        totalPages: result.totalPages,
+        lastPage: result.lastPage,
         totalResults: result.totalResults,
         data: result.data,
         error: result.error,
@@ -248,7 +248,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
-      totalPages: result.totalPages,
+      lastPage: result.lastPage,
       totalResults: result.totalResults,
       data: result.data,
     });
@@ -310,7 +310,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
-        totalPages: result.totalPages,
+        lastPage: result.lastPage,
         totalResults: result.totalResults,
         data: result.data,
         error: result.error,
@@ -320,7 +320,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
-      totalPages: result.totalPages,
+      lastPage: result.lastPage,
       totalResults: result.totalResults,
       data: result.data,
     });
@@ -337,7 +337,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({
         hasNextPage: result.hasNextPage,
         currentPage: result.currentPage,
-        totalPages: result.totalPages,
+        lastPage: result.lastPage,
         totalResults: result.totalResults,
         data: result.data,
         error: result.error,
@@ -347,7 +347,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     return reply.status(200).send({
       hasNextPage: result.hasNextPage,
       currentPage: result.currentPage,
-      totalPages: result.totalPages,
+      lastPage: result.lastPage,
       totalResults: result.totalResults,
       data: result.data,
     });

@@ -1,13 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Anilist, HiAnime } from '@middlegear/hakai-extensions';
-import {
-  toFormatAnilist,
-  type AnimeProviderApi,
-  toAnilistSeasons,
-  toProvider,
-  toCategory,
-  toZoroServers,
-} from '../../utils/utils.js';
+import { toFormatAnilist, toAnilistSeasons, toCategory, toZoroServers } from '../../utils/utils.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 import type { AnilistInfo, AnilistRepetitive, FastifyParams, FastifyQuery } from '../../utils/types.js';
 

@@ -7,7 +7,7 @@ const Format = {
   MUSIC: 'MUSIC',
 } as const;
 
-type Format = (typeof Format)[keyof typeof Format];
+export type Format = (typeof Format)[keyof typeof Format];
 const IAnimeCategory = {
   TV: 'TV',
   MOVIE: 'MOVIE',
@@ -50,7 +50,7 @@ const Seasons = {
   SUMMER: 'SUMMER',
   FALL: 'FALL',
 } as const;
-type Seasons = (typeof Seasons)[keyof typeof Seasons];
+export type Seasons = (typeof Seasons)[keyof typeof Seasons];
 
 export function toAnilistSeasons(input: string): Seasons {
   const validSeason = Object.values(Seasons).join(' or ');

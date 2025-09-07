@@ -1,8 +1,15 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { Format, HiAnime, Jikan, Seasons } from '@middlegear/hakai-extensions';
+import { HiAnime, Jikan } from '@middlegear/hakai-extensions';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 import type { FastifyQuery, FastifyParams, AnilistInfo, AnilistRepetitive } from '../../utils/types.js';
-import { type AnimeProviderApi, toCategory, toProvider, toZoroServers } from '../../utils/utils.js';
+import {
+  type AnimeProviderApi,
+  type Format,
+  type Seasons,
+  toCategory,
+  toProvider,
+  toZoroServers,
+} from '../../utils/utils.js';
 
 const jikan = new Jikan();
 const zoro = new HiAnime();
