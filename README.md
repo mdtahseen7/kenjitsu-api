@@ -1,8 +1,5 @@
 
-> **Disclaimer:**  
-> This API is **unofficial** and is **not affiliated** with Anilist, Jikan, or any third-party providers. It does not host, own, or distribute any content. All data belongs to its respective owners.  
 
----
 
 ### **Clone the Repository**  
 ```sh
@@ -63,10 +60,3 @@ pnpm run start
 The API will run on **`http://localhost:3000`**.
 
 ---
-
-
-
-## ⚖ License  
-This project is licensed under the **MIT License**. See the [LICENSE](./LICENSE) file for details.
-
-
