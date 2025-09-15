@@ -1,2 +1,3 @@
 Fix docker 
-fix the search suggestions sometimes it errors out
+1. Advanced search in himovies
+2. The search type in tmdb needs to check first if there are inputs or none

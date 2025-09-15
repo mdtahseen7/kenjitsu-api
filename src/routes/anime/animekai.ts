@@ -37,7 +37,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     q = decodeURIComponent(q);
     q = q.replace(/[^\w\s\-_.]/g, '');
 
-    if (q.length > 100) {
+    if (q.length > 1000) {
       return reply.status(400).send({ error: 'Query too long' });
     }
     if (!q.length) {

@@ -26,7 +26,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     if (!q.length) {
       return reply.status(400).send({ error: 'Query string cannot be empty' });
     }
-    if (q.length > 100) {
+    if (q.length > 1000) {
       return reply.status(400).send({ error: 'Query too long' });
     }
 

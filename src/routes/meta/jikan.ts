@@ -30,7 +30,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Query string cannot be empty' });
     }
 
-    if (q.length > 100) {
+    if (q.length > 1000) {
       return reply.status(400).send({ error: 'Query too long' });
     }
 

@@ -18,6 +18,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     }
     const page = Number(request.query.page) || 1;
     const type = String(request.query.type);
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required parameter: 'type' cannot be undefined.",
+      });
+    }
     const validateSearchType = toSearchType(type);
 
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
@@ -52,6 +57,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       const mediaId = Number(request.params.mediaId);
       const type = String(request.query.type);
+      if (!type) {
+        return reply.status(400).send({
+          error: "Missing required parameter: 'type' cannot be undefined.",
+        });
+      }
       const validateType = toSearchType(type);
 
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
@@ -88,6 +98,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
   fastify.get('/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const type = String(request.query.type);
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required parameter: 'type' cannot be undefined.",
+      });
+    }
     const page = Number(request.query.page) || 1;
     const timeWindow = request.query.timeWindow || 'week';
     const validateType = toSearchType(type);
@@ -123,6 +138,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get('/popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const type = String(request.query.type);
     const page = Number(request.query.page) || 1;
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required parameter: 'type' cannot be undefined.",
+      });
+    }
     const validateType = toSearchType(type);
 
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
@@ -155,6 +175,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get('/top', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     const page = Number(request.query.page) || 1;
     const type = String(request.query.type);
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required parameter: 'type' cannot be undefined.",
+      });
+    }
     const validateType = toSearchType(type);
 
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
@@ -189,6 +214,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       // const provider = String(request.query.provider) currently its only flixHQ will add more in the future
       const tmdbId = Number(request.params.tmdbId);
       const type = String(request.query.type);
+      if (!type) {
+        return reply.status(400).send({
+          error: "Missing required parameter: 'type' cannot be undefined.",
+        });
+      }
       const validateType = toSearchType(type);
 
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
