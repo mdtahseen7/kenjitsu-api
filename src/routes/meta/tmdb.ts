@@ -2,7 +2,6 @@ import { TheMovieDatabase } from '@middlegear/hakai-extensions';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { FastifyInstance } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
-import { SearchType, toSearchType, toTimeWindow } from '../../utils/utils.js';
 
 const tmdb = new TheMovieDatabase();
 
@@ -12,385 +11,301 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
     const q = String(request.query.q);
+    const page = Number(request.query.page) || 1;
+    const type = request.query.type as 'movie' | 'tv';
+
     if (!q.length) {
       return reply.status(400).send({ error: 'Query string cannot be empty' });
     }
-    const page = Number(request.query.page) || 1;
-    const type = String(request.query.type);
     if (!type) {
       return reply.status(400).send({
-        error: "Missing required parameter: 'type' cannot be undefined.",
+        error: "Missing required query parameter: 'type'.",
       });
     }
-    const validateSearchType = toSearchType(type);
-
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    if (type !== 'movie' && type !== 'tv') {
+      return reply.status(400).send({
+        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
+      });
+    }
 
     let result;
-    validateSearchType === SearchType.Movie
-      ? (result = await tmdb.searchMovie(q, page))
-      : (result = await tmdb.searchShows(q, page));
+    type === 'movie' ? (result = await tmdb.searchMovie(q, page)) : (result = await tmdb.searchShows(q, page));
 
     if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get(
     '/info/:mediaId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+
       const mediaId = Number(request.params.mediaId);
-      const type = String(request.query.type);
+      const type = request.query.type as 'movie' | 'tv';
+
       if (!type) {
         return reply.status(400).send({
-          error: "Missing required parameter: 'type' cannot be undefined.",
+          error: "Missing required query parameter: 'type'.",
         });
       }
-      const validateType = toSearchType(type);
-
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      if (type !== 'movie' && type !== 'tv') {
+        return reply.status(400).send({
+          error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
+        });
+      }
 
       let result;
-      validateType === SearchType.Movie
-        ? (result = await tmdb.fetchMovieInfo(mediaId))
-        : (result = await tmdb.fetchShowInfo(mediaId));
+      type === 'movie' ? (result = await tmdb.fetchMovieInfo(mediaId)) : (result = await tmdb.fetchShowInfo(mediaId));
 
-      if ('error' in result && 'seasons' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          seasons: result.seasons,
-          error: result.error,
-        });
-      } else if ('error' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          error: result.error,
-        });
+      if ('error' in result) {
+        return reply.status(500).send(result);
       }
 
-      if ('seasons' in result && validateType === SearchType.TvShow) {
-        return reply.send({
-          data: result.data,
-          seasons: result.seasons,
-        });
-      } else
-        return reply.status(200).send({
-          data: result.data,
-        });
+      return reply.status(200).send(result);
     },
   );
 
   fastify.get('/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const type = String(request.query.type);
-    if (!type) {
-      return reply.status(400).send({
-        error: "Missing required parameter: 'type' cannot be undefined.",
-      });
-    }
-    const page = Number(request.query.page) || 1;
-    const timeWindow = request.query.timeWindow || 'week';
-    const validateType = toSearchType(type);
-    const validateWindow = toTimeWindow(timeWindow);
-
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-    let result;
-    validateType === SearchType.Movie
-      ? (result = await tmdb.fetchTrendingMovies(validateWindow, page))
-      : (result = await tmdb.fetchTrendingTv(validateWindow, page));
+    const type = request.query.type as 'movie' | 'tv';
+    const page = Number(request.query.page) || 1;
+    const timeWindow = (request.query.timeWindow as 'day' | 'week') || 'week';
 
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-        error: result.error,
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required query parameter: 'type'.",
       });
     }
+    if (type !== 'movie' && type !== 'tv') {
+      return reply.status(400).send({
+        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
+      });
+    }
+    if (timeWindow !== 'week' && timeWindow !== 'day') {
+      return reply.status(400).send({
+        error: `Invalid timeWindow: '${timeWindow}'. Expected 'day' or 'week'.`,
+      });
+    }
+    let result;
+    type === 'movie'
+      ? (result = await tmdb.fetchTrendingMovies(timeWindow, page))
+      : (result = await tmdb.fetchTrendingTv(timeWindow, page));
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    return reply.status(200).send(result);
   });
 
   fastify.get('/popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const type = String(request.query.type);
-    const page = Number(request.query.page) || 1;
-    if (!type) {
-      return reply.status(400).send({
-        error: "Missing required parameter: 'type' cannot be undefined.",
-      });
-    }
-    const validateType = toSearchType(type);
-
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-    let result;
-    validateType === SearchType.Movie
-      ? (result = await tmdb.fetchPopularMovies(page))
-      : (result = await tmdb.fetchPopularTv(page));
+    const type = request.query.type as 'movie' | 'tv';
+    const page = Number(request.query.page) || 1;
 
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-        error: result.error,
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required query parameter: 'type'.",
+      });
+    }
+    if (type !== 'movie' && type !== 'tv') {
+      return reply.status(400).send({
+        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
       });
     }
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+    let result;
+    type === 'movie' ? (result = await tmdb.fetchPopularMovies(page)) : (result = await tmdb.fetchPopularTv(page));
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    return reply.status(200).send(result);
   });
 
   fastify.get('/top', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const type = request.query.type as 'movie' | 'tv';
     const page = Number(request.query.page) || 1;
-    const type = String(request.query.type);
+
     if (!type) {
       return reply.status(400).send({
-        error: "Missing required parameter: 'type' cannot be undefined.",
+        error: "Missing required query parameter: 'type'.",
       });
     }
-    const validateType = toSearchType(type);
+    if (type !== 'movie' && type !== 'tv') {
+      return reply.status(400).send({
+        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
+      });
+    }
 
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
     let result;
-    validateType === SearchType.Movie
-      ? (result = await tmdb.fetchTopMovies(page))
-      : (result = await tmdb.fetchTopShows(page));
+    type === 'movie' ? (result = await tmdb.fetchTopMovies(page)) : (result = await tmdb.fetchTopShows(page));
 
     if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get(
     '/get-provider/:tmdbId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      // const provider = String(request.query.provider) currently its only flixHQ will add more in the future
-      const tmdbId = Number(request.params.tmdbId);
-      const type = String(request.query.type);
-      if (!type) {
-        return reply.status(400).send({
-          error: "Missing required parameter: 'type' cannot be undefined.",
-        });
-      }
-      const validateType = toSearchType(type);
-
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
+      const type = request.query.type as 'movie' | 'tv';
+      const tmdbId = request.params.tmdbId;
+      if (!tmdbId) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'tmdbId'.",
+        });
+      }
+      if (!type) {
+        return reply.status(400).send({
+          error: "Missing required query parameter: 'type'.",
+        });
+      }
+      if (type !== 'movie' && type !== 'tv') {
+        return reply.status(400).send({
+          error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
+        });
+      }
+
       let result;
-      validateType === SearchType.Movie
+      type === 'movie'
         ? (result = await tmdb.fetchMovieProviderId(tmdbId))
         : (result = await tmdb.fetchTvProviderId(tmdbId));
 
-      if ('error' in result && 'seasons' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          seasons: result.seasons,
-          provider: result.provider,
-          error: result.error,
-        });
-      } else if ('error' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          provider: result.provider,
-          error: result.error,
-        });
+      if ('error' in result) {
+        return reply.status(500).send(result);
       }
 
-      if ('seasons' in result && validateType === SearchType.TvShow) {
-        return reply.send({
-          data: result.data,
-          seasons: result.seasons,
-          providerResult: result.provider,
-        });
-      } else
-        return reply.status(200).send({
-          data: result.data,
-          provider: result.provider,
-        });
+      return reply.status(200).send(result);
     },
   );
 
   fastify.get('/airing-tv', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const page = Number(request.query.page) || 1;
-
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const page = Number(request.query.page) || 1;
 
     const result = await tmdb.fetchAiringTv(page);
 
     if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get(
     '/episodes/:tmdbId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      const tmdbId = Number(request.params.tmdbId);
-      const season = Number(request.query.season);
-
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const result = await tmdb.fetchTvEpisodes(tmdbId, season);
-      if ('error' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          error: result.error,
+      const tmdbId = Number(request.params.tmdbId);
+      const season = Number(request.query.season);
+      if (!tmdbId) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'tmdbId'.",
         });
       }
+      if (!season) {
+        return reply.status(400).send({
+          error: "Missing required query parameter: 'season'.",
+        });
+      }
+      const result = await tmdb.fetchTvEpisodes(tmdbId, season);
 
-      return reply.status(200).send({
-        data: result.data,
-      });
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+
+      return reply.status(200).send(result);
     },
   );
 
   fastify.get(
     '/episode-info/:tmdbId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
       const tmdbId = Number(request.params.tmdbId);
       const season = Number(request.query.season);
       const episodeNumber = Number(request.query.episode);
 
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-      const result = await tmdb.fetchEpisodeInfo(tmdbId, season, episodeNumber);
-      if ('error' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          error: result.error,
+      if (!episodeNumber) {
+        return reply.status(400).send({
+          error: "Missing required query parameter: 'episode'. which is a number",
         });
       }
+      if (!tmdbId) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'tmdbId'.",
+        });
+      }
+      if (!season) {
+        return reply.status(400).send({
+          error: "Missing required query parameter: 'season'.",
+        });
+      }
+      const result = await tmdb.fetchEpisodeInfo(tmdbId, season, episodeNumber);
 
-      return reply.status(200).send({
-        data: result.data,
-      });
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+
+      return reply.status(200).send(result);
     },
   );
 
   fastify.get('/releasing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const page = Number(request.query.page) || 1;
+    reply.header('Cache-Control', `s-maxage=${48 * 60 * 60}, stale-while-revalidate=300`);
 
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    const page = Number(request.query.page) || 1;
 
     const result = await tmdb.fetchReleasingMovies(page);
 
     if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const page = Number(request.query.page) || 1;
-
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const page = Number(request.query.page) || 1;
 
     const result = await tmdb.fetchUpcomingMovies(page);
 
     if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get(
     '/watch/:tmdbId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
+
       const tmdbId = Number(request.params.tmdbId);
       const seasonNumber = Number(request.query.season);
       const episodeNumber = Number(request.query.episode);
-
-      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
 
       let result;
       seasonNumber && episodeNumber
@@ -398,15 +313,10 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         : (result = await tmdb.fetchMovieSources(tmdbId));
 
       if ('error' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          error: result.error,
-        });
+        return reply.status(500).send(result);
       }
 
-      return reply.status(200).send({
-        data: result.data,
-      });
+      return reply.status(200).send(result);
     },
   );
 }

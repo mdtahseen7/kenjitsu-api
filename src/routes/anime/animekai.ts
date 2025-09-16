@@ -1,8 +1,6 @@
-import { Animekai } from '@middlegear/hakai-extensions';
+import { Animekai, type IAnimeCategory, type IMetaFormat, type KaiGenres } from '@middlegear/hakai-extensions';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import type { AnimekaiInfo, FastifyParams, FastifyQuery } from '../../utils/types.js';
-import { toAKGenres, toCategory, toFormatAnilist, toFormatHianime } from '../../utils/utils.js';
-import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
+import { IAMetaFormatArr, IAnimeCategoryArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
 
 const animekai = new Animekai();
 
@@ -71,82 +69,64 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get('/recently-updated', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
 
-    const page = Number(request.query.page) || 1;
-    const category = String(request.query.format) || 'TV';
-    const format = toFormatAnilist(category);
-    const result = await animekai.fetchRecentlyUpdated(format, page);
+    const page = request.query.page || 1;
+    const category = (request.query.format as IMetaFormat) || 'TV';
 
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        error: result.error,
-        data: result.data,
+    if (!IAMetaFormatArr.includes(category)) {
+      return reply.status(400).send({
+        error: `Invalid format: '${category}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+
+    const result = await animekai.fetchRecentlyUpdated(category, page);
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    return reply.status(200).send(result);
   });
 
   fastify.get('/recently-added', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
 
-    const category = String(request.query.format) || 'TV';
-    const format = toFormatAnilist(category);
-    const page = Number(request.query.page) || 1;
+    const format = (request.query.format as IMetaFormat) || 'TV';
+    const page = request.query.page || 1;
 
-    const result = await animekai.fetchRecentlyAdded(format, page);
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        error: result.error,
-        data: result.data,
+    if (!IAMetaFormatArr.includes(format)) {
+      return reply.status(400).send({
+        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      totalResults: result.totalResults,
-      lastPage: result.lastPage,
-      data: result.data,
-    });
+
+    const result = await animekai.fetchRecentlyAdded(format, page);
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    return reply.status(200).send(result);
   });
 
   fastify.get('/recently-completed', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
 
-    const category = String(request.query.format) || 'TV';
-    const format = toFormatAnilist(category);
-    const page = Number(request.query.page) || 1;
+    const format = (request.query.format as IMetaFormat) || 'TV';
+    const page = request.query.page || 1;
 
-    const result = await animekai.fetchRecentlyCompleted(format, page);
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        error: result.error,
-        data: result.data,
+    if (!IAMetaFormatArr.includes(format)) {
+      return reply.status(400).send({
+        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      totalResults: result.totalResults,
-      lastPage: result.lastPage,
-      data: result.data,
-    });
+
+    const result = await animekai.fetchRecentlyCompleted(format, page);
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    return reply.status(200).send(result);
   });
 
   fastify.get('/category', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -154,56 +134,42 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = Number(request.query.page) || 1;
-    const format = request.query.format || 'TV';
-    const newformat = toFormatHianime(format);
+    const format = (request.query.format as IAnimeCategory) || 'TV';
 
-    const result = await animekai.fetchAnimeCategory(newformat, page);
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        error: result.error,
-        data: result.data,
+    if (!IAnimeCategoryArr.includes(format)) {
+      return reply.status(400).send({
+        error: `Invalid format: '${format}'. Expected one of ${IAnimeCategoryArr.join(', ')}.`,
       });
     }
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
 
-      data: result.data,
-    });
+    const result = await animekai.fetchAnimeCategory(format, page);
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    return reply.status(200).send(result);
   });
 
   fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     //
-    reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-    const page = Number(request.query.page) || 1;
-    const format = request.query.format || 'TV';
-    const newformat = toFormatAnilist(format);
+    const format = (request.query.format as IMetaFormat) || 'TV';
+    const page = request.query.page || 1;
 
-    const result = await animekai.fetchTopAiring(newformat, page);
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        error: result.error,
-        data: result.data,
+    if (!IAMetaFormatArr.includes(format)) {
+      return reply.status(400).send({
+        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      totalResults: result.totalResults,
-      data: result.data,
-    });
+
+    const result = await animekai.fetchTopAiring(format, page);
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    return reply.status(200).send(result);
   });
 
   fastify.get(
@@ -212,128 +178,90 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
-      const genre = String(request.params.genre);
-      const validGenre = toAKGenres(genre);
-      const result = await animekai.fetchGenres(validGenre, page);
-      if ('error' in result) {
-        return reply.status(500).send({
-          hasNextPage: result.hasNextPage,
-          currentPage: result.currentPage,
-          lastPage: result.lastPage,
-          totalResults: result.totalResults,
-          error: result.error,
-          data: result.data,
+      const genre = request.params.genre;
+
+      if (!genre) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'genre'.",
         });
       }
-      return reply.status(200).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        totalResults: result.totalResults,
-        data: result.data,
-      });
+
+      const result = await animekai.fetchGenres(genre, page);
+
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+
+      return reply.status(200).send(result);
     },
   );
 
   fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    const animeId = String(request.params.animeId);
-    const cacheKey = `animekai-episodesinfo-${animeId}`;
-
-    let timecached: number;
-
     reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
+
+    const animeId = String(request.params.animeId);
+
+    if (!animeId) {
+      return reply.status(400).send({
+        error: "Missing required path parameter: 'animeId'.",
+      });
+    }
 
     const result = await animekai.fetchAnimeInfo(animeId);
 
     if ('error' in result) {
-      return reply.status(500).send({ error: result.error, data: result.data, providerEpisodes: result.providerEpisodes });
+      return reply.status(500).send(result);
     }
 
-    const status = result.data?.status?.toLowerCase().trim();
-    status === 'completed' ? (timecached = 2000) : (timecached = 1);
-
-    const cachedData = (await redisGetCache(cacheKey)) as AnimekaiInfo;
-
-    if (cachedData) {
-      return reply.status(200).send({
-        data: result.data,
-        relatedSeasons: result.relatedSeasons,
-        recommendedAnime: result.recommendedAnime,
-        relatedAnime: result.relatedAnime,
-        providerEpisodes: result.providerEpisodes,
-      });
-    }
-
-    if (result.data && result.providerEpisodes && result.providerEpisodes.length > 0) {
-      const cacheableData = {
-        data: result.data,
-        relatedSeasons: result.relatedSeasons,
-        recommendedAnime: result.recommendedAnime,
-        relatedAnime: result.relatedAnime,
-        providerEpisodes: result.providerEpisodes,
-      };
-      await redisSetCache(cacheKey, cacheableData, timecached);
-    }
-
-    return reply.status(200).send({
-      data: result.data,
-      relatedSeasons: result.relatedSeasons,
-      recommendedAnime: result.recommendedAnime,
-      relatedAnime: result.relatedAnime,
-      providerEpisodes: result.providerEpisodes,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get(
     '/servers/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      const episodeId = String(request.params.episodeId);
-      const category = request.query.category || 'sub';
-
       reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=180');
+
+      const episodeId = String(request.params.episodeId);
+      const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
 
       if (!episodeId) {
         return reply.status(400).send({ error: 'Missing required params: EpisodeId' });
       }
 
-      const newcategory = toCategory(category);
-      reply.header('Cache-Control', 's-maxage=120, stale-while-revalidate=180');
-
-      const result = await animekai.fetchServers(episodeId, newcategory);
+      if (!['sub', 'dub', 'raw'].includes(category)) {
+        return reply.status(400).send({
+          error: `Invalid category: '${category}'. Expected one of 'sub','dub','raw'.`,
+        });
+      }
+      const result = await animekai.fetchServers(episodeId, category);
 
       if ('error' in result) {
-        return reply.status(500).send({ error: result.error, data: result.data });
+        return reply.status(500).send(result);
       }
 
-      if (result.data.length === 0) {
-        return reply.status(500).send({ data: [], error: 'Internal Server Error' });
-      }
-
-      return reply.status(200).send({ data: result.data });
+      return reply.status(200).send(result);
     },
   );
 
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', 's-maxage=120, stale-while-revalidate=180');
+
       const episodeId = String(request.params.episodeId);
-      const category = request.query.category || 'sub';
+      const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
 
       if (!episodeId) {
         return reply.status(400).send({ error: 'Missing required params: EpisodeId' });
       }
 
-      const newcategory = toCategory(category);
-
-      reply.header('Cache-Control', 's-maxage=120, stale-while-revalidate=180');
-
-      const result = await animekai.fetchSources(episodeId, newcategory);
+      const result = await animekai.fetchSources(episodeId, category);
 
       if ('error' in result) {
-        return reply.status(500).send({ error: result.error, headers: result.headers, data: result.data });
+        return reply.status(500).send(result);
       }
 
-      return reply.status(200).send({ headers: result.headers, data: result.data });
+      return reply.status(200).send(result);
     },
   );
 }

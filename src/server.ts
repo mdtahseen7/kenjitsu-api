@@ -6,17 +6,23 @@ import AnimekaiRoutes from './routes/anime/animekai.js';
 import HianimeRoutes from './routes/anime/hianime.js';
 import AnilistRoutes from './routes/meta/anilist.js';
 import JikanRoutes from './routes/meta/jikan.js';
+import HimoviesRoutes from './routes/movies/himovies.js';
 import FlixHQRoutes from './routes/movies/flixhq.js';
 import TheMovieDatabaseRoutes from './routes/meta/tmdb.js';
 
 import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 import fastifyCors, { corsOptions } from './config/cors.js';
 
+// const app = Fastify({
+//   logger: { level: 'info' },
+//   maxParamLength: 15000,
+// });
 const app = Fastify({
   logger: { level: 'info' },
-  maxParamLength: 15000,
+  routerOptions: {
+    maxParamLength: 1000,
+  },
 });
-
 async function FastifyApp() {
   app.register(rateLimitPlugIn, ratelimitOptions);
   app.setNotFoundHandler((request: FastifyRequest, reply: FastifyReply) => {
@@ -34,7 +40,7 @@ async function FastifyApp() {
   await app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
   await app.register(HianimeRoutes, { prefix: '/api/hianime' });
   await app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
-
+  await app.register(HimoviesRoutes, { prefix: 'api/himovies' });
   await app.register(TheMovieDatabaseRoutes, { prefix: '/api/tmdb' });
 
   try {

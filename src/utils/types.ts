@@ -8,6 +8,7 @@ export interface FastifyParams {
   tvmazeId?: number;
   sort?: string;
   genre?: string;
+  country?: string;
 }
 export interface FastifyQuery {
   imdbId?: number;
@@ -24,76 +25,15 @@ export interface FastifyQuery {
   timeWindow?: string;
   season?: string;
   episode?: number;
+  country?: string;
+  genre?: string;
+  quality?: string;
 }
-type KaiEpisodes = {
-  episodeNumber: number;
-  rating?: number;
-  aired?: boolean;
-  episodeId: string;
-  title: string;
-  overview?: string;
-  thumbnail?: string;
-};
-type KaiInfo = {
-  animeId: string;
-  title: string;
-  posterImage: string;
-  romaji: string;
-  status: string;
-  type: string;
-  synopsis: string;
-  episodes: {
-    sub: number;
-    dub: number;
-  };
-  totalEpisodes: number;
-};
-export type AnimekaiInfo = {
-  providerEpisodes: KaiEpisodes[];
-  data: KaiInfo;
-};
-type provider = {
-  animeId: string;
-  name: string;
-  romaji: string;
-  score: number;
-  providerName: string;
-};
-export type AnilistInfo = {
-  data: AnilistData;
-  provider?: provider;
-  providerEpisodes?: KaiEpisodes[];
-};
-export type AnilistRepetitive = {
-  totalResults: number;
-  data: AnilistData[];
-  hasNextPage: boolean;
-  lastPage: number;
-  currentPage: number;
-  perPage: number;
-};
-export type AnilistData = {
-  malId: number;
-  anilistId?: number;
-  image: string;
-  color: string;
-  bannerImage: string;
-  title: {
-    romaji: string;
-    english: string;
-    native: string;
-  };
-  trailer: string;
-  format: string;
-  status: string;
-  duration: number;
-  score: number;
-  genres: string;
-  episodes: number;
-  synopsis: string;
-  season: string;
-  startDate: string;
-  endDate: string;
-  studio: string;
-  producers: string[];
-};
+
+export const IAMetaFormatArr = ['TV', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'] as const;
+
+export const IAnimeCategoryArr = ['TV', 'MOVIE', 'SPECIALS', 'OVA', 'ONA'] as const;
+
+export const IAnimeSeasonsArr = ['WINTER', 'SPRING', 'SUMMER', 'FALL'] as const;
+
+export const JSortArr = ['airing', 'bypopularity', 'upcoming', 'favorite', 'rating'] as const;

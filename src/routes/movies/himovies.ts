@@ -1,9 +1,8 @@
-import { Himovies } from '@middlegear/hakai-extensions';
+import { HiMovies, type IMovieGenre, type IMovieCountry } from '@middlegear/hakai-extensions';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
-import { SearchType, toSearchType } from '../../utils/utils.js';
 
-const himovies = new Himovies();
+const himovies = new HiMovies();
 
 export default async function HimoviesRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -11,19 +10,9 @@ export default async function HimoviesRoutes(fastify: FastifyInstance) {
     const result = await himovies.fetchHome();
 
     if ('error' in result) {
-      return reply.status(500).send({
-        trending: result.trending,
-        recentReleases: result.recentReleases,
-        upcoming: result.upcoming,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
-
-    return reply.status(200).send({
-      trending: result.trending,
-      recentReleases: result.recentReleases,
-      upcoming: result.upcoming,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -44,20 +33,9 @@ export default async function HimoviesRoutes(fastify: FastifyInstance) {
     const result = await himovies.search(q, page);
 
     if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        data: result.data,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      data: result.data,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get('/suggestions', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -77,98 +55,223 @@ export default async function HimoviesRoutes(fastify: FastifyInstance) {
     const result = await himovies.searchSuggestions(q);
 
     if ('error' in result) {
-      return reply.status(500).send({
-        data: result.data,
-        error: result.error,
-      });
+      return reply.status(500).send(result);
     }
-    return reply.status(200).send({
-      data: result.data,
-    });
+    return reply.status(200).send(result);
   });
 
-  //// needs fixing
-  fastify.get('/advancedsearch', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+  fastify.get(
+    '/advanced-search',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
-    const type = 'all';
+      const genre = request.query.genre as IMovieGenre | 'all' | undefined;
+      const country = request.query.country as IMovieCountry | undefined;
+      const type = (request.query.type as 'movie' | 'tv' | 'all') || 'all';
+      const quality = (request.query.quality as 'all' | 'HD' | 'SD' | 'CAM') || 'all';
+      const page = Number(request.query.page) || 1;
 
-    const page = Number(request.query.page) || 1;
-    const result = await himovies.advancedSearch(type);
+      const validTypes = ['movie', 'tv', 'all'] as const;
+      if (!validTypes.includes(type)) {
+        return reply.status(400).send({
+          error: `Invalid type: '${type}'. Expected one of ${validTypes.join(', ')}.`,
+        });
+      }
 
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        data: result.data,
-        error: result.error,
-      });
-    }
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      data: result.data,
-    });
-  });
+      const validQualities = ['all', 'SD', 'HD', 'CAM'] as const;
+      if (!validQualities.includes(quality)) {
+        return reply.status(400).send({
+          error: `Invalid quality: '${quality}'. Expected one of ${validQualities.join(', ')}.`,
+        });
+      }
+
+      const selectedCountry = country || 'all';
+
+      const result = await himovies.advancedSearch(type, quality, genre, selectedCountry, page);
+
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    },
+  );
 
   fastify.get(
     '/info/:mediaId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
-      const mediaId = String(request.params.mediaId);
+      const mediaId = request.params.mediaId;
+
+      if (!mediaId) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'mediaId'.",
+        });
+      }
       const result = await himovies.fetchMediaInfo(mediaId);
 
       if ('error' in result) {
-        return reply.status(500).send({
-          data: result.data,
-          recommended: result.recommended,
-          providerEpisodes: result.providerEpisodes,
-          error: result.error,
-        });
+        return reply.status(500).send(result);
       }
-      return reply.status(200).send({
-        data: result.data,
-        recommended: result.recommended,
-        providerEpisodes: result.providerEpisodes,
-      });
+      return reply.status(200).send(result);
     },
   );
 
   fastify.get('/popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    const type = String(request.query.type);
-    if (!type) {
-      return reply.status(400).send({
-        error: "Missing required parameter: 'type' cannot be undefined.",
-      });
-    }
-    const page = Number(request.query.page) || 1;
-    const validateType = toSearchType(type);
-
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-    let result;
-    validateType === SearchType.Movie
-      ? (result = await himovies.fetchPopularMovies(page))
-      : (result = await himovies.fetchPopularTv(page));
+    const type = request.query.type as 'movie' | 'tv';
+    const page = request.query.page || 1;
 
-    if ('error' in result) {
-      return reply.status(500).send({
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-        lastPage: result.lastPage,
-        data: result.data,
-        error: result.error,
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required query parameter: 'type'.",
       });
     }
 
-    return reply.status(200).send({
-      hasNextPage: result.hasNextPage,
-      currentPage: result.currentPage,
-      lastPage: result.lastPage,
-      data: result.data,
-    });
+    if (type !== 'movie' && type !== 'tv') {
+      return reply.status(400).send({
+        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
+      });
+    }
+
+    let result;
+    type === 'movie' ? (result = await himovies.fetchPopularMovies(page)) : (result = await himovies.fetchPopularTv(page));
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+    return reply.status(200).send(result);
   });
+
+  fastify.get('/top', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const type = request.query.type as 'movie' | 'tv';
+    const page = request.query.page || 1;
+    if (!type) {
+      return reply.status(400).send({
+        error: "Missing required query parameter: 'type'.",
+      });
+    }
+    if (type !== 'movie' && type !== 'tv') {
+      return reply.status(400).send({
+        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
+      });
+    }
+
+    let result;
+    type === 'movie' ? (result = await himovies.fetchTopMovies(page)) : (result = await himovies.fetchTopTv(page));
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+    return reply.status(200).send(result);
+  });
+
+  fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const page = request.query.page || 1;
+    const result = await himovies.fetchUpcoming(page);
+
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+    return reply.status(200).send(result);
+  });
+
+  fastify.get(
+    '/genre/:genre',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+      const genre = request.params.genre as IMovieGenre | undefined;
+      const page = request.query.page || 1;
+
+      if (!genre) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'genre'.",
+        });
+      }
+      const result = await himovies.fetchGenre(genre, page);
+
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    },
+  );
+
+  fastify.get(
+    '/country/:country',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+      const page = request.query.page || 1;
+      const country = request.params.country as IMovieCountry;
+
+      if (!country) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'country'.",
+        });
+      }
+
+      const result = await himovies.fetchByCountry(country, page);
+
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    },
+  );
+
+  fastify.get(
+    '/server/:episodeId',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+      const episodeId = request.params.episodeId;
+      if (!episodeId) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'episodeId'.",
+        });
+      }
+
+      const result = await himovies.fetchServers(episodeId);
+
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    },
+  );
+
+  fastify.get(
+    '/watch/:episodeId',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=1200, stale-while-revalidate=300`);
+
+      const episodeId = request.params.episodeId;
+      const server = (request.query.server as 'megacloud' | 'akcloud' | 'upcloud') || 'megacloud';
+      if (!episodeId) {
+        return reply.status(400).send({
+          error: "Missing required path parameter: 'episodeId'.",
+        });
+      }
+      const validServers = ['megacloud', 'akcloud', 'upcloud'] as const;
+      if (!validServers.includes(server)) {
+        return reply.status(400).send({
+          error: `Invalid server: '${server}'. Expected one of ${validServers.join(', ')}.`,
+        });
+      }
+
+      const result = await himovies.fetchSources(episodeId, server);
+
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    },
+  );
 }

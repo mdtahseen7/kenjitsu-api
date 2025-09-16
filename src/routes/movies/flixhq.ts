@@ -1,7 +1,6 @@
 import { FlixHQ } from '@middlegear/hakai-extensions';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
-import { toFlixServers } from '../../utils/utils.js';
 
 const flixhq = new FlixHQ();
 
@@ -11,6 +10,8 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
+
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
     q = q.replace(/[^\w\s\-_.]/g, '');
@@ -22,81 +23,73 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Query string cannot be empty' });
     }
 
-    reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
-
     const page = Number(request.query.page) || 1;
     const result = await flixhq.search(q, page);
 
     if ('error' in result) {
-      return reply.status(500).send({
-        error: result.error,
-        data: result.data,
-        hasNextPage: result.hasNextPage,
-        currentPage: result.currentPage,
-      });
+      return reply.status(500).send(result);
     }
-    return reply.send({
-      currentPage: result.currentPage,
-      hasNextPage: result.hasNextPage,
-      data: result.data,
-    });
+
+    return reply.status(200).send(result);
   });
 
   fastify.get('/info/:mediaId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    const mediaId = String(request.params.mediaId);
-
     reply.header('Cache-Control', 's-maxage=43200, stale-while-revalidate=300');
+
+    const mediaId = request.params.mediaId;
+
+    if (!mediaId) {
+      return reply.status(400).send({ error: 'Missing required params: mediaId' });
+    }
 
     const result = await flixhq.fetchMediaInfo(mediaId);
     if ('error' in result) {
-      return reply.status(500).send({
-        error: result.error,
-        data: result.data,
-        episodes: result.episodes,
-      });
+      return reply.status(500).send(result);
     }
 
-    return reply.send({
-      data: result.data,
-      episodes: result.episodes,
-    });
+    return reply.status(200).send(result);
   });
 
   fastify.get('/servers/:episodeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    const episodeId = String(request.params.episodeId);
-
     reply.header('Cache-Control', 's-maxage=3600, stale-while-revalidate=300');
+
+    const episodeId = request.params.episodeId;
+
+    if (!episodeId) {
+      return reply.status(400).send({ error: 'Missing required params: EpisodeId' });
+    }
     const results = await flixhq.fetchMediaServers(episodeId);
 
     if ('error' in results) {
-      return reply.status(500).send({
-        error: results.error,
-        data: results.data,
-      });
+      return reply.status(500).send(results);
     }
-
-    return reply.send({
-      data: results.data,
-    });
+    return reply.status(200).send(results);
   });
 
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      const episodeId = String(request.params.episodeId);
-      const server = request.query.server || 'vidcloud';
-      const validateServer = toFlixServers(server);
       reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=180');
 
-      const results = await flixhq.fetchSources(episodeId, validateServer);
+      const episodeId = request.params.episodeId;
+      const server = (request.query.server as 'upcloud' | 'vidcloud' | 'akcloud') || 'vidcloud';
+
+      if (!episodeId) {
+        return reply.status(400).send({ error: 'Missing required params: EpisodeId' });
+      }
+
+      const validServers = ['vidcloud', 'akcloud', 'upcloud'] as const;
+      if (!validServers.includes(server)) {
+        return reply.status(400).send({
+          error: `Invalid server: '${server}'. Expected one of ${validServers.join(', ')}.`,
+        });
+      }
+      const results = await flixhq.fetchSources(episodeId, server);
 
       if ('error' in results) {
-        return reply.status(500).send({ error: results.error, data: results.data });
+        return reply.status(500).send(results);
       }
-      return reply.send({
-        headers: results.headers,
-        data: results.data,
-      });
+      return reply.status(200).send(results);
     },
   );
 }
