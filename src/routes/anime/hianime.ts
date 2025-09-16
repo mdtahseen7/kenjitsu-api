@@ -274,7 +274,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     return reply.status(200).send(result);
   });
 
-  fastify.get('/server/:episodeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+  fastify.get('/servers/:episodeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     const episodeId = String(request.params.episodeId);
 
     reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);

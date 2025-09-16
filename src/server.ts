@@ -12,6 +12,7 @@ import TheMovieDatabaseRoutes from './routes/meta/tmdb.js';
 
 import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 import fastifyCors, { corsOptions } from './config/cors.js';
+import AnimepaheRoutes from './routes/anime/animepahe.js';
 
 // const app = Fastify({
 //   logger: { level: 'info' },
@@ -27,7 +28,7 @@ async function FastifyApp() {
   app.register(rateLimitPlugIn, ratelimitOptions);
   app.setNotFoundHandler((request: FastifyRequest, reply: FastifyReply) => {
     reply.code(404).send({
-      message: 'Stop go read the docs',
+      message: 'Looks like you are lost. Visit the docs',
       url: 'https://hakai-documentation.vercel.app',
     });
   });
@@ -39,6 +40,7 @@ async function FastifyApp() {
   await app.register(JikanRoutes, { prefix: '/api/jikan' });
   await app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
   await app.register(HianimeRoutes, { prefix: '/api/hianime' });
+  await app.register(AnimepaheRoutes, { prefix: 'api/animepahe' });
   await app.register(FlixHQRoutes, { prefix: '/api/flixhq' });
   await app.register(HimoviesRoutes, { prefix: 'api/himovies' });
   await app.register(TheMovieDatabaseRoutes, { prefix: '/api/tmdb' });

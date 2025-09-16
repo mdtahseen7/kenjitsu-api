@@ -227,7 +227,7 @@ export default async function HimoviesRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get(
-    '/server/:episodeId',
+    '/servers/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
