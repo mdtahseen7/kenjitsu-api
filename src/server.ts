@@ -14,10 +14,6 @@ import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 import fastifyCors, { corsOptions } from './config/cors.js';
 import AnimepaheRoutes from './routes/anime/animepahe.js';
 
-// const app = Fastify({
-//   logger: { level: 'info' },
-//   maxParamLength: 15000,
-// });
 const app = Fastify({
   logger: { level: 'info' },
   routerOptions: {
