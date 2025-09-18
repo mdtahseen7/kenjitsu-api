@@ -308,7 +308,9 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
           server as (typeof validServers)[number],
         );
       }
-
+      // return reply.status(400).send({
+      //           error: `Unsupported provider for episodeId: '${episodeId}' Fetch episodeId from provider episodes endpoint.`,
+      //         });
       if ('error' in result) {
         return reply.status(500).send(result);
       }
