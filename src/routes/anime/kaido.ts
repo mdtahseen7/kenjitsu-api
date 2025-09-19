@@ -312,7 +312,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
           error: `Invalid category picked: '${category}'. Expected one of 'sub','dub','raw'.`,
         });
       }
-      if (!['vidstreaming , vidcloud'].includes(server)) {
+      if (!['vidstreaming', 'vidcloud'].includes(server)) {
         return reply.status(400).send({
           error: `Invalid  streaming server selected: '${server}'. Expected one of 'vidcloud' or 'vidstreaming'.`,
         });
