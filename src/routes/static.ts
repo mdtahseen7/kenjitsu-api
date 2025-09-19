@@ -25,8 +25,4 @@ export default async function StaticRoutes(fastify: FastifyInstance) {
   fastify.get('/favicon.ico', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.redirect('/favicon.png', 301);
   });
-
-  // fastify.get('/api/hianime', async (request: FastifyRequest, reply: FastifyReply) => {
-  //   return reply.sendFile('hianime.html');
-  // });
 }
