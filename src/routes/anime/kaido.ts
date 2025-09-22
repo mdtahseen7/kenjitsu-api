@@ -6,8 +6,6 @@ import { IAnimeCategoryArr, type FastifyParams, type FastifyQuery } from '../../
 const zoro = new Kaido();
 
 export default async function KaidoRoutes(fastify: FastifyInstance) {
-  //
-
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${178 * 60 * 60}, stale-while-revalidate=300`);
 

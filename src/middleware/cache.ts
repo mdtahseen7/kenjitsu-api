@@ -4,14 +4,21 @@ import 'dotenv';
 const DEFAULT_CACHE_EXPIRY_HOURS = 1;
 
 /**
- * Sets a value in the cache (Redis and/or in-memory).
+ * Sets a value in the cache (Redis and/or in-memory) for permanent storage.
+ * @param [ttlInHours=DEFAULT_CACHE_EXPIRY_HOURS] Set cache expiry in hours. Use value zero for permanent storage or set a value( default = 1(hour))
  */
 async function redisSetCache<T>(key: string, value: T, ttlInHours: number = DEFAULT_CACHE_EXPIRY_HOURS): Promise<void> {
   const stringValue = JSON.stringify(value);
 
   if (redis) {
-    await redis.set(key, stringValue, 'EX', ttlInHours * 3600);
-    console.log(`Data stored in Redis (Key: ${key})`);
+    // If ttlInHours is set to 0 or you want to set it as permanent
+    if (ttlInHours === 0) {
+      await redis.set(key, stringValue);
+      console.log(`Data stored permanently in Redis (Key: ${key})`);
+    } else {
+      await redis.set(key, stringValue, 'EX', ttlInHours * 3600);
+      console.log(`Data stored in Redis with TTL (Key: ${key}, TTL: ${ttlInHours} hours)`);
+    }
   }
 }
 

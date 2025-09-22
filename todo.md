@@ -1,4 +1,1 @@
-Fix docker 
-1. No need to unpacking format the extension librabry response structure
-2. The search type in tmdb needs to check first if there are inputs or none
-3. Think how of how redis is used and how caching works across the server  can have a settime expiry or permannet
+1. Caching Anilist data and keeping it fresh. Should I serve data and refresh it in redis at an interval especially top airing and trending or just set it and expire it 

@@ -1,6 +1,4 @@
 
-
-
 ### **Clone the Repository**  
 ```sh
 git clone https://github.com/middlegear/hakai-api.git
@@ -16,11 +14,6 @@ pnpm install
 Create a `.env` file in the root directory:
 
 ```
-# ========================
-# Server Configuration
-# ========================
-PORT = 3000 
-HOSTNAME = 0.0.0.0
 
 # ========================
 # Rate Limiting

@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Anilist, type Seasons, type IMetaFormat } from '@middlegear/hakai-extensions';
 import { IAMetaFormatArr, IAnimeSeasonsArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
+import { redisSetCache, redisGetCache } from '../../middleware/cache.js';
 
 const anilist = new Anilist();
 
@@ -38,33 +39,85 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get('/info/:anilistId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
+    let duration;
     const anilistId = Number(request.params.anilistId);
 
-    const result = await anilist.fetchInfo(anilistId);
+    const cacheKey = `anilist-info-${anilistId}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
+    const result = await anilist.fetchInfo(anilistId);
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && result.data !== null) {
+      result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 148);
+      await redisSetCache(cacheKey, result, duration);
     }
 
     return reply.status(200).send(result);
   });
 
   fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 50);
+
+    const cacheKey = `anilist-top-airing-${page}`;
+    const cacheData = await redisGetCache(cacheKey);
+    if (cacheData) {
+      return reply.status(200).send(cacheData);
+    }
 
     const result = await anilist.fetchTopAiring(page, perPage);
     if ('error' in result) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 48);
+    }
+
     return reply.status(200).send(result);
   });
 
   fastify.get('/most-popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${200 * 60 * 60}, stale-while-revalidate=300`);
+
+    const format = (request.query.format as IMetaFormat) || 'TV';
+    const page = Number(request.query.page) || 1;
+    let perPage = Number(request.query.perPage) || 20;
+    perPage = Math.min(perPage, 50);
+
+    if (!IAMetaFormatArr.includes(format)) {
+      return reply.status(400).send({
+        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
+      });
+    }
+
+    const cacheKey = `anilist-most-popular-${format}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
+    const result = await anilist.fetchMostPopular(page, perPage, format);
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 720);
+    }
+    return reply.status(200).send(result);
+  });
+
+  fastify.get('/top-anime', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
     const format = (request.query.format as IMetaFormat) || 'TV';
@@ -77,91 +130,116 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
-    const result = await anilist.fetchMostPopular(page, perPage, format);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/top-anime', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${48 * 60 * 60}, stale-while-revalidate=300`);
-
-    const format = (request.query.format as IMetaFormat) || 'TV';
-    const page = Number(request.query.page) || 1;
-    let perPage = Number(request.query.perPage) || 20;
-    perPage = Math.min(perPage, 50);
-
-    if (!IAMetaFormatArr.includes(format)) {
-      return reply.status(400).send({
-        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
-      });
+    const cacheKey = `anilist-top-anime-${format}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
     }
 
     const result = await anilist.fetchTopRatedAnime(page, perPage, format);
-
     if ('error' in result) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 720);
+    }
     return reply.status(200).send(result);
   });
 
   fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${48 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 50);
 
-    const result = await anilist.fetchTopUpcoming(page, perPage);
+    const cacheKey = `anilist-upcoming-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
+    const result = await anilist.fetchTopUpcoming(page, perPage);
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
     }
 
     return reply.status(200).send(result);
   });
 
   fastify.get('/characters/:anilistId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${96 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const anilistId = Number(request.params.anilistId);
+
+    const cacheKey = `anilist-characters-${anilistId}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
     const result = await anilist.fetchCharacters(anilistId);
     if ('error' in result) {
       return reply.status(500).send(result);
     }
+
+    if (result && result.data !== null) {
+      await redisSetCache(cacheKey, result, 0);
+    }
+
     return reply.status(200).send(result);
   });
 
   fastify.get('/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 50);
 
-    const result = await anilist.fetchTrending(page, perPage);
+    const cacheKey = `anilist-trending-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
+    const result = await anilist.fetchTrending(page, perPage);
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 24);
     }
 
     return reply.status(200).send(result);
   });
 
   fastify.get('/related/:anilistId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${96 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const anilistId = Number(request.params.anilistId);
+
+    const cacheKey = `anilist-related-${anilistId}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
     const result = await anilist.fetchRelatedAnime(anilistId);
     if ('error' in result) {
       return reply.status(500).send(result);
     }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 24);
+    }
+
     return reply.status(200).send(result);
   });
 
@@ -193,11 +271,22 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
           error: `Invalid format: '${season}'. Expected one of ${IAnimeSeasonsArr.join(', ')}.`,
         });
       }
-      const result = await anilist.fetchSeasonalAnime(season, year, page, perPage, format);
 
+      const cacheKey = `anilist-season-${season}-${year}-${page}-${format}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
+      const result = await anilist.fetchSeasonalAnime(season, year, page, perPage, format);
       if ('error' in result) {
         return reply.status(500).send(result);
       }
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 24);
+      }
+
       return reply.status(200).send(result);
     },
   );
@@ -205,7 +294,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/get-provider/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+      // reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
@@ -220,11 +309,23 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
           error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe `,
         });
       }
+
+      let duration;
+      const cacheKey = `anilist-provider-id-${anilistId}-${provider}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await anilist.fetchProviderId(anilistId, provider);
       if ('error' in result) {
         return reply.status(500).send(result);
       }
 
+      if (result && result.data !== null && result.provider !== null) {
+        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 148);
+        await redisSetCache(cacheKey, result, duration);
+      }
       return reply.status(200).send(result);
     },
   );
@@ -232,7 +333,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/provider-episodes/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      // reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
@@ -248,7 +349,19 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         });
       }
 
+      let duration;
+
+      const cacheKey = `anilist-provider-episodes-${anilistId}-${provider}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await anilist.fetchAnimeProviderEpisodes(anilistId, provider);
+      if (result && result.data !== null && result.providerEpisodes !== null) {
+        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 24);
+        await redisSetCache(cacheKey, result, duration);
+      }
 
       if ('error' in result) {
         return reply.status(500).send(result);
@@ -261,7 +374,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      // reply.header('Cache-Control', 's-maxage=420, stale-while-revalidate=60');
+      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
 
       const episodeId = String(request.params.episodeId);
 

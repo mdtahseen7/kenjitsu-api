@@ -1,7 +1,7 @@
 {
   "name": "hakai-api",
   "version": "1.0.0",
-  "description": "api serving anime and media information",
+  "description": "api serving anime, movies and tv.",
   "main": "src/server.ts",
   "type": "module",
   "scripts": {
@@ -17,7 +17,8 @@
   },
   "keywords": [
     "anime",
-    "scraper"
+    "movie",
+    "tv"
   ],
   "author": "middlegear",
   "license": "MIT",
@@ -28,7 +29,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@types/node": "^22.18.6",
+    "@types/node": "^24.5.2",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
     "prettier": "^3.6.2",
