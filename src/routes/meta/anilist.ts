@@ -246,7 +246,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/season',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
       const season = request.query.season as Seasons;
       const year = Number(request.query.year);
@@ -284,7 +284,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 24);
+        await redisSetCache(cacheKey, result, 168);
       }
 
       return reply.status(200).send(result);
@@ -294,7 +294,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/get-provider/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      // reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
@@ -333,7 +333,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/provider-episodes/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      // reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
