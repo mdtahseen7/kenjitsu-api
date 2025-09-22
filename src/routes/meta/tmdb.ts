@@ -2,6 +2,7 @@ import { TheMovieDatabase } from '@middlegear/hakai-extensions';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { FastifyInstance } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
+import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 
 const tmdb = new TheMovieDatabase();
 
@@ -11,7 +12,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const q = String(request.query.q);
     const page = Number(request.query.page) || 1;
@@ -59,7 +60,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
           error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
         });
       }
-
+      const cacheKey = `tmdb-media-info-${mediaId}-${type}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
       let result;
       type === 'movie' ? (result = await tmdb.fetchMovieInfo(mediaId)) : (result = await tmdb.fetchShowInfo(mediaId));
 
@@ -67,7 +72,10 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         return reply.status(500).send(result);
       }
 
-      return reply.status(200).send(result);
+      if (result && result.data !== null) {
+        await redisSetCache(cacheKey, result, 168);
+      }
+      if (result) return reply.status(200).send(result);
     },
   );
 
@@ -93,6 +101,16 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         error: `Invalid timeWindow: '${timeWindow}'. Expected 'day' or 'week'.`,
       });
     }
+
+    let duration;
+    timeWindow === 'week' ? (duration = 168) : (duration = 24);
+
+    const cacheKey = ` tmdb-trending-${type}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     let result;
     type === 'movie'
       ? (result = await tmdb.fetchTrendingMovies(timeWindow, page))
@@ -102,6 +120,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, duration);
+    }
     return reply.status(200).send(result);
   });
 
@@ -121,6 +142,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
       });
     }
+    const cacheKey = ` tmdb-popular-${type}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
     let result;
     type === 'movie' ? (result = await tmdb.fetchPopularMovies(page)) : (result = await tmdb.fetchPopularTv(page));
@@ -129,6 +155,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
+    }
     return reply.status(200).send(result);
   });
 
@@ -148,6 +177,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
       });
     }
+    const cacheKey = `tmdb-popular-${type}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
     let result;
     type === 'movie' ? (result = await tmdb.fetchTopMovies(page)) : (result = await tmdb.fetchTopShows(page));
@@ -156,6 +190,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
+    }
     return reply.status(200).send(result);
   });
 
@@ -181,7 +218,11 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
           error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
         });
       }
-
+      const cacheKey = ` tmdb-provider-id-${type}-${tmdbId}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
       let result;
       type === 'movie'
         ? (result = await tmdb.fetchMovieProviderId(tmdbId))
@@ -191,6 +232,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         return reply.status(500).send(result);
       }
 
+      if (result && result.data !== null && result.provider !== null) {
+        await redisSetCache(cacheKey, result, 168);
+      }
       return reply.status(200).send(result);
     },
   );
@@ -200,19 +244,27 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
     const page = Number(request.query.page) || 1;
 
-    const result = await tmdb.fetchAiringTv(page);
+    const cacheKey = ` tmdb-airing-tv-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
+    const result = await tmdb.fetchAiringTv(page);
     if ('error' in result) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
+    }
     return reply.status(200).send(result);
   });
 
   fastify.get(
     '/episodes/:tmdbId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const tmdbId = Number(request.params.tmdbId);
       const season = Number(request.query.season);
@@ -226,12 +278,21 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
           error: "Missing required query parameter: 'season'.",
         });
       }
+      const cacheKey = ` tmdb-episodes-tv-${tmdbId}-${season}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await tmdb.fetchTvEpisodes(tmdbId, season);
 
       if ('error' in result) {
         return reply.status(500).send(result);
       }
 
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 24);
+      }
       return reply.status(200).send(result);
     },
   );
@@ -260,12 +321,21 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
           error: "Missing required query parameter: 'season'.",
         });
       }
-      const result = await tmdb.fetchEpisodeInfo(tmdbId, season, episodeNumber);
 
+      const cacheKey = `tmdb-episode-info-${tmdbId}-${season}-${episodeNumber}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
+      const result = await tmdb.fetchEpisodeInfo(tmdbId, season, episodeNumber);
       if ('error' in result) {
         return reply.status(500).send(result);
       }
 
+      if (result && result.data !== null) {
+        await redisSetCache(cacheKey, result, 0);
+      }
       return reply.status(200).send(result);
     },
   );
@@ -275,12 +345,21 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
     const page = Number(request.query.page) || 1;
 
+    const cacheKey = `tmdb-releasing-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     const result = await tmdb.fetchReleasingMovies(page);
 
     if ('error' in result) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
+    }
     return reply.status(200).send(result);
   });
 
@@ -289,12 +368,20 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
     const page = Number(request.query.page) || 1;
 
+    const cacheKey = `tmdb-upcoming-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
     const result = await tmdb.fetchUpcomingMovies(page);
 
     if ('error' in result) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
+    }
     return reply.status(200).send(result);
   });
 

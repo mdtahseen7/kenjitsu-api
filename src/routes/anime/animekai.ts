@@ -106,7 +106,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
 
   fastify.get('/category', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     //
-    reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = Number(request.query.page) || 1;
     const format = (request.query.format as IAnimeCategory) || 'TV';

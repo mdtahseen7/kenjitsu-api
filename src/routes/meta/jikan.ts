@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { Jikan, type Seasons, type IMetaFormat } from '@middlegear/hakai-extensions';
 
 import { type FastifyQuery, type FastifyParams, IAMetaFormatArr, IAnimeSeasonsArr } from '../../utils/types.js';
+import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 
 const jikan = new Jikan();
 
@@ -13,6 +14,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
+
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
     q = q.replace(/[^\w\s\-_.]/g, '');
@@ -29,8 +32,6 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 25);
 
-    reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
-
     const result = await jikan.search(q, page, perPage);
 
     if ('error' in result) {
@@ -44,12 +45,22 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     const malId = Number(request.params.malId);
 
+    let duration;
+    const cacheKey = `mal-info-${malId}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     const result = await jikan.fetchInfo(malId);
 
     if ('error' in result) {
       return reply.status(500).send(result);
     }
-
+    if (result && result.data !== null) {
+      result.data.status === 'finished airing' ? (duration = 0) : (duration = 168);
+      await redisSetCache(cacheKey, result, duration);
+    }
     return reply.status(200).send(result);
   });
 
@@ -66,12 +77,20 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
+    const cacheKey = `mal-top-airing-${format}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
     const result = await jikan.fetchTopAiring(page, perPage, format);
 
     if ('error' in result) {
       return reply.status(500).send(result);
     }
 
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 24);
+    }
     return reply.status(200).send(result);
   });
 
@@ -89,13 +108,19 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
-
+    const cacheKey = `mal-most-popular-${format}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
     const result = await jikan.fetchMostPopular(page, perPage, format);
 
     if ('error' in result) {
       return reply.status(500).send(result);
     }
-
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 720);
+    }
     return reply.status(200).send(result);
   });
 
@@ -106,10 +131,20 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 25);
 
+    const cacheKey = `mal-upcoming-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     const result = await jikan.fetchTopUpcoming(page, perPage);
 
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
     }
     return reply.status(200).send(result);
   });
@@ -121,10 +156,19 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 25);
 
-    const result = await jikan.fetchTopMovies(page, perPage);
+    const cacheKey = `mal-movies-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
+    const result = await jikan.fetchTopMovies(page, perPage);
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
     }
 
     return reply.status(200).send(result);
@@ -158,11 +202,22 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
           error: `Invalid format: '${season}'. Expected one of ${IAnimeSeasonsArr.join(', ')}.`,
         });
       }
-      const result = await jikan.fetchSeasonalAnime(season, year, format, page, perPage);
 
+      const cacheKey = `mal-seasons-${season}-${format}-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
+      const result = await jikan.fetchSeasonalAnime(season, year, format, page, perPage);
       if ('error' in result) {
         return reply.status(500).send(result);
       }
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 168);
+      }
+
       return reply.status(200).send(result);
     },
   );
@@ -180,11 +235,20 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
+    const cacheKey = `mal-seasons-current-season-${format}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
     const result = await jikan.fetchCurrentSeason(page, perPage, format);
 
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
     }
     return reply.status(200).send(result);
   });
@@ -202,10 +266,20 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
       });
     }
+    const cacheKey = `mal-seasons-next-season-${format}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     const result = await jikan.fetchNextSeason(page, perPage, format);
 
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 168);
     }
     return reply.status(200).send(result);
   });
@@ -215,10 +289,19 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     const malId = Number(request.params.malId);
 
+    const cacheKey = `mal-characters-${malId}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
     const result = await jikan.fetchAnimeCharacters(malId);
 
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 720);
     }
     return reply.status(200).send(result);
   });
@@ -231,10 +314,21 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const malId = Number(request.params.malId);
       const page = Number(request.query.page) || 1;
 
+      const cacheKey = `mal-episodes-${malId}-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await jikan.fetchEpisodes(malId, page);
       if ('error' in result) {
         return reply.status(500).send(result);
       }
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 720);
+      }
+
       return reply.status(200).send(result);
     },
   );
@@ -256,9 +350,19 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
           error: "Missing required query parameter: 'episode'. which is a number",
         });
       }
+      const cacheKey = `mal-episode-info-${malId}-${episodeNumber}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await jikan.fetchEpisodeInfo(malId, episodeNumber);
       if ('error' in result) {
         return reply.status(500).send(result);
+      }
+
+      if (result && result.data !== null && typeof result.data === 'object') {
+        await redisSetCache(cacheKey, result, 0);
       }
       return reply.status(200).send(result);
     },
@@ -282,12 +386,24 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
           error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe `,
         });
       }
+
+      let duration;
+      const cacheKey = `mal-provider-id-${malId}-${provider}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await jikan.fetchProviderId(malId, provider);
 
       if ('error' in result) {
         return reply.status(500).send(result);
       }
 
+      if (result && result.data !== null && result.provider !== null) {
+        result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 148);
+        await redisSetCache(cacheKey, result, duration);
+      }
       return reply.status(200).send(result);
     },
   );
@@ -310,19 +426,31 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
           error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe `,
         });
       }
+
+      let duration;
+
+      const cacheKey = `mal-provider-episodes-${malId}-${provider}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await jikan.fetchAnimeProviderEpisodes(malId, provider);
 
       if ('error' in result) {
         return reply.status(500).send(result);
       }
-
+      if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
+        result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 24);
+        await redisSetCache(cacheKey, result, duration);
+      }
       return reply.status(200).send(result);
     },
   );
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=420, stale-while-revalidate=60');
+      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
 
       const episodeId = String(request.params.episodeId);
 

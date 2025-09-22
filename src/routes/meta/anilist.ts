@@ -358,15 +358,14 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       }
 
       const result = await anilist.fetchAnimeProviderEpisodes(anilistId, provider);
-      if (result && result.data !== null && result.providerEpisodes !== null) {
-        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 24);
-        await redisSetCache(cacheKey, result, duration);
-      }
-
       if ('error' in result) {
         return reply.status(500).send(result);
       }
 
+      if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
+        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 24);
+        await redisSetCache(cacheKey, result, duration);
+      }
       return reply.status(200).send(result);
     },
   );
