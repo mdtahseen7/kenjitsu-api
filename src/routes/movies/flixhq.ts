@@ -1,16 +1,28 @@
 import { FlixHQ, type IMovieGenre, type IMovieCountry } from '@middlegear/hakai-extensions';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
+import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 
 const flixhq = new FlixHQ();
 
 export default async function FlixHQRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+
+    const cacheKey = `flix-home`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     const result = await flixhq.fetchHome();
 
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.upcoming) && result.upcoming.length > 0) {
+      await redisSetCache(cacheKey, result, 48);
     }
     return reply.status(200).send(result);
   });
@@ -87,10 +99,20 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
 
       const selectedCountry = country || 'all';
 
+      const cacheKey = `flix-advanced-search-${type}-${quality}-${genre}-${selectedCountry}-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await flixhq.advancedSearch(type, quality, genre, selectedCountry, page);
 
       if ('error' in result) {
         return reply.status(500).send(result);
+      }
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 720);
       }
       return reply.status(200).send(result);
     },
@@ -99,7 +121,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/info/:mediaId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
 
       const mediaId = request.params.mediaId;
 
@@ -108,10 +130,20 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
           error: "Missing required path parameter: 'mediaId'.",
         });
       }
+      const cacheKey = `flix-media-info-${mediaId}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await flixhq.fetchMediaInfo(mediaId);
 
       if ('error' in result) {
         return reply.status(500).send(result);
+      }
+
+      if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 1) {
+        await redisSetCache(cacheKey, result, 168);
       }
       return reply.status(200).send(result);
     },
@@ -135,12 +167,23 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
       });
     }
 
+    const cacheKey = `flix-popular-${type}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     let result;
     type === 'movie' ? (result = await flixhq.fetchPopularMovies(page)) : (result = await flixhq.fetchPopularTv(page));
 
     if ('error' in result) {
       return reply.status(500).send(result);
     }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 336);
+    }
+
     return reply.status(200).send(result);
   });
 
@@ -159,6 +202,11 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
         error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
       });
     }
+    const cacheKey = `flix-top-${type}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
     let result;
     type === 'movie' ? (result = await flixhq.fetchTopMovies(page)) : (result = await flixhq.fetchTopTv(page));
@@ -166,6 +214,11 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
     if ('error' in result) {
       return reply.status(500).send(result);
     }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 336);
+    }
+
     return reply.status(200).send(result);
   });
 
@@ -173,10 +226,21 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = request.query.page || 1;
+
+    const cacheKey = `flix-upcoming-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     const result = await flixhq.fetchUpcoming(page);
 
     if ('error' in result) {
       return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 148);
     }
     return reply.status(200).send(result);
   });
@@ -194,10 +258,21 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
           error: "Missing required path parameter: 'genre'.",
         });
       }
+
+      const cacheKey = `flix-genre-${genre}-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       const result = await flixhq.fetchGenre(genre, page);
 
       if ('error' in result) {
         return reply.status(500).send(result);
+      }
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 336);
       }
       return reply.status(200).send(result);
     },
@@ -216,11 +291,19 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
           error: "Missing required path parameter: 'country'.",
         });
       }
+      const cacheKey = `flix-country-${country}-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
 
       const result = await flixhq.fetchByCountry(country, page);
 
       if ('error' in result) {
         return reply.status(500).send(result);
+      }
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 336);
       }
       return reply.status(200).send(result);
     },
@@ -237,11 +320,19 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
           error: "Missing required path parameter: 'episodeId'.",
         });
       }
-
+      const cacheKey = `flix-servers-${episodeId}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
       const result = await flixhq.fetchServers(episodeId);
 
       if ('error' in result) {
         return reply.status(500).send(result);
+      }
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 148);
       }
       return reply.status(200).send(result);
     },
