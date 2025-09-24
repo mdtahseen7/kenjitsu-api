@@ -42,7 +42,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     let duration;
     const anilistId = Number(request.params.anilistId);
 
-    if (anilistId) {
+    if (!anilistId) {
       return reply.status(400).send({ error: 'Missing required path params: anilistId' });
     }
 
@@ -255,7 +255,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
       const anilistId = Number(request.params.anilistId);
 
-      if (anilistId) {
+      if (!anilistId) {
         return reply.status(400).send({ error: 'Missing required path params: anilistId' });
       }
       const cacheKey = `anilist-media-schedule-${anilist}`;
