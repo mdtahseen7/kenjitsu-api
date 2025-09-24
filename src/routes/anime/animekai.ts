@@ -204,7 +204,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/servers/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=180');
+      reply.header('Cache-Control', 's-maxage=420, stale-while-revalidate=180');
 
       const episodeId = String(request.params.episodeId);
       const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
@@ -237,7 +237,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
 
       if (!episodeId) {
-        return reply.status(400).send({ error: 'Missing required params: EpisodeId' });
+        return reply.status(400).send({ error: 'Missing required params: episodeId' });
       }
 
       const result = await animekai.fetchSources(episodeId, category);

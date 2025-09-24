@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hakai API </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Hakai API</title>
     <link rel="icon" type="image/png"
         href="https://m3jz13d05b.ufs.sh/f/dLgmbGNJLXerMjDNawBovlI3sdb2nkrUQc6OBfxYZGS19XE7" />
     <style>
@@ -14,11 +14,18 @@
             box-sizing: border-box;
         }
 
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #e0e0e0;
             min-height: 100vh;
-            overflow-x: hidden;
             background: linear-gradient(135deg, #16012b 0%, #160327 50%, #400174 100%);
             display: flex;
             justify-content: center;
@@ -27,8 +34,14 @@
         }
 
         .container {
+            width: 100%;
             max-width: 800px;
-            padding: 2rem;
+            padding: 2rem 1rem;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         h1 {
@@ -62,7 +75,7 @@
             align-items: center;
             gap: 0.75rem;
             padding: 1.25rem 2.75rem;
-            background: linear-gradient(135deg, #321949 0%, #3a1a4f 100%);
+            background: linear-gradient(135deg, #31124e 0%, #3a1a4f 100%);
             color: #f2e9ff;
             text-decoration: none;
             font-weight: 700;
@@ -83,11 +96,36 @@
 
             .subtitle {
                 font-size: 1.1rem;
+                margin-bottom: 2rem;
             }
 
             .cta-button {
                 font-size: 1.1rem;
                 padding: 1rem 2rem;
+            }
+
+            .container {
+                padding: 1.5rem 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .cta-button {
+                font-size: 1rem;
+                padding: 0.75rem 1.5rem;
+            }
+
+            .container {
+                padding: 1rem 0.5rem;
             }
         }
     </style>
@@ -97,12 +135,11 @@
     <div class="container">
         <h1>Hakai API</h1>
         <p class="subtitle">
-            A single API for anime, movies, and TV data.
+            A single API for Anime, Movies, and Tv.
         </p>
         <div class="cta-buttons">
             <a href="https://hakai-documentation.vercel.app" class="cta-button">
                 <span>Read the Docs</span>
-
             </a>
         </div>
     </div>
