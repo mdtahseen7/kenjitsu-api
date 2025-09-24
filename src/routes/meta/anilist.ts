@@ -42,6 +42,10 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     let duration;
     const anilistId = Number(request.params.anilistId);
 
+    if (anilistId) {
+      return reply.status(400).send({ error: 'Missing required path params: anilistId' });
+    }
+
     const cacheKey = `anilist-info-${anilistId}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) {
@@ -219,6 +223,59 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     return reply.status(200).send(result);
   });
+
+  fastify.get('/airing-schedule', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${3 * 60 * 60}, stale-while-revalidate=300`);
+
+    const page = Number(request.query.page) || 1;
+    const score = Number(request.query.score) || 60;
+
+    const cacheKey = `anilist-schedule-${page}-${score}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
+    const result = await anilist.fetchAiringSchedule(page, score);
+    if ('error' in result) {
+      return reply.status(500).send(result);
+    }
+
+    if (result && Array.isArray(result.data) && result.data.length > 0) {
+      await redisSetCache(cacheKey, result, 6);
+    }
+
+    return reply.status(200).send(result);
+  });
+
+  fastify.get(
+    '/media-schedule/:anilistId',
+    async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+
+      const anilistId = Number(request.params.anilistId);
+
+      if (anilistId) {
+        return reply.status(400).send({ error: 'Missing required path params: anilistId' });
+      }
+      const cacheKey = `anilist-media-schedule-${anilist}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
+      const result = await anilist.fetchMediaSchedule(anilistId);
+      if ('error' in result) {
+        return reply.status(500).send(result);
+      }
+
+      if (result && result.data !== null) {
+        await redisSetCache(cacheKey, result, 12);
+      }
+
+      return reply.status(200).send(result);
+    },
+  );
 
   fastify.get('/related/:anilistId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);

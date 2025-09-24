@@ -14,6 +14,7 @@ export interface FastifyQuery {
   imdbId?: number;
   tvdbId?: string;
   year?: string;
+  score?: string;
   q?: string;
   type?: string;
   page?: number;
