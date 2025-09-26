@@ -14,6 +14,7 @@ import TheMovieDatabaseRoutes from './routes/meta/tmdb.js';
 
 import { ratelimitOptions, rateLimitPlugIn } from './config/ratelimit.js';
 import fastifyCors, { corsOptions } from './config/cors.js';
+import { checkRedis } from './config/redis.js';
 
 const app = Fastify({
   logger: { level: 'info' },
@@ -22,6 +23,8 @@ const app = Fastify({
   },
 });
 async function FastifyApp() {
+  checkRedis();
+
   app.register(rateLimitPlugIn, ratelimitOptions);
   app.setNotFoundHandler((request: FastifyRequest, reply: FastifyReply) => {
     reply.code(404).send({
