@@ -231,7 +231,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=180');
+      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=180');
 
       const episodeId = String(request.params.episodeId);
       const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';

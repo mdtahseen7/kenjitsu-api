@@ -422,7 +422,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/watch/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
+      reply.header('Cache-Control', 's-maxage=900, stale-while-revalidate=60');
 
       const episodeId = String(request.params.episodeId);
       const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
