@@ -22,11 +22,7 @@ export default function AnimepaheRoutes(fastify: FastifyInstance) {
     const result = await animepahe.search(q);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     return reply.status(200).send(result);
@@ -50,15 +46,9 @@ export default function AnimepaheRoutes(fastify: FastifyInstance) {
     }
 
     const result = await animepahe.fetchAnimeInfo(animeId);
-
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (
       result &&
       result.data !== null &&
@@ -90,15 +80,9 @@ export default function AnimepaheRoutes(fastify: FastifyInstance) {
     }
 
     const result = await animepahe.fetchEpisodes(animeId);
-
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (result && Array.isArray(result.data) && result.data.length > 0) {
       await redisSetCache(cacheKey, result, 24);
     }
@@ -124,11 +108,7 @@ export default function AnimepaheRoutes(fastify: FastifyInstance) {
 
     const result = await animepahe.fetchServers(episodeId);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -153,13 +133,8 @@ export default function AnimepaheRoutes(fastify: FastifyInstance) {
       }
 
       const result = await animepahe.fetchSources(episodeId, category);
-
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       return reply.status(200).send(result);

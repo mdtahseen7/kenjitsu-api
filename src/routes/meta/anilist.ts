@@ -30,11 +30,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.search(q, page, perPage);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     return reply.status(200).send(result);
@@ -58,11 +54,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchInfo(anilistId);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && result.data !== null) {
@@ -88,11 +80,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchTopAiring(page, perPage);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -124,11 +112,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchMostPopular(page, perPage, format);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -158,11 +142,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchTopRatedAnime(page, perPage, format);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -186,11 +166,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchTopUpcoming(page, perPage);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -213,11 +189,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchCharacters(anilistId);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && result.data !== null) {
@@ -242,11 +214,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchTrending(page, perPage);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -270,11 +238,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchAiringSchedule(page, score);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -302,11 +266,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
       const result = await anilist.fetchMediaSchedule(anilistId);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && result.data !== null) {
@@ -330,12 +290,9 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
     const result = await anilist.fetchRelatedAnime(anilistId);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
+
     if (result && Array.isArray(result.data) && result.data.length > 0) {
       await redisSetCache(cacheKey, result, 24);
     }
@@ -380,11 +337,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
       const result = await anilist.fetchSeasonalAnime(season, year, page, perPage, format);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -423,11 +376,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
       const result = await anilist.fetchProviderId(anilistId, provider);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && result.data !== null && result.provider !== null) {
@@ -467,11 +416,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
       const result = await anilist.fetchAnimeProviderEpisodes(anilistId, provider);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
@@ -533,11 +478,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         });
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       return reply.status(200).send(result);

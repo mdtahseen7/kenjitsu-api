@@ -36,11 +36,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     type === 'movie' ? (result = await tmdb.searchMovie(q, page)) : (result = await tmdb.searchShows(q, page));
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     return reply.status(200).send(result);
@@ -73,11 +69,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       type === 'movie' ? (result = await tmdb.fetchMovieInfo(mediaId)) : (result = await tmdb.fetchShowInfo(mediaId));
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && result.data !== null) {
@@ -125,11 +117,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       : (result = await tmdb.fetchTrendingTv(timeWindow, page));
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -164,11 +152,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     type === 'movie' ? (result = await tmdb.fetchPopularMovies(page)) : (result = await tmdb.fetchPopularTv(page));
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -203,11 +187,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     type === 'movie' ? (result = await tmdb.fetchTopMovies(page)) : (result = await tmdb.fetchTopShows(page));
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -249,12 +229,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         : (result = await tmdb.fetchTvProviderId(tmdbId));
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
+
       if (result && result.data !== null && result.provider !== null) {
         await redisSetCache(cacheKey, result, 168);
       }
@@ -310,11 +287,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       const result = await tmdb.fetchTvEpisodes(tmdbId, season);
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -357,11 +330,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
       const result = await tmdb.fetchEpisodeInfo(tmdbId, season, episodeNumber);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && result.data !== null) {
@@ -385,12 +354,9 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     const result = await tmdb.fetchReleasingMovies(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
+
     if (result && Array.isArray(result.data) && result.data.length > 0) {
       await redisSetCache(cacheKey, result, 168);
     }
@@ -410,11 +376,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     const result = await tmdb.fetchUpcomingMovies(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -438,11 +400,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         : (result = await tmdb.fetchMovieSources(tmdbId));
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       return reply.status(200).send(result);

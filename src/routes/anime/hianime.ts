@@ -63,13 +63,8 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
 
     const result = await zoro.searchSuggestions(q);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     return reply.status(200).send(result);
   });
 
@@ -88,13 +83,8 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
 
     const result = await zoro.fetchAnimeInfo(animeId);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (result && result.data !== null && result.providerEpisodes.length > 0) {
       result.data.status?.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 24);
       await redisSetCache(cacheKey, result, duration);
@@ -115,11 +105,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchTopAiring(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -141,11 +127,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     }
     const result = await zoro.fetchMostFavourites(page);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -166,11 +148,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     }
     const result = await zoro.fetchMostPopular(page);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -193,13 +171,8 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchRecentlyCompleted(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (result && Array.isArray(result.data) && result.data.length > 0) {
       await redisSetCache(cacheKey, result, 24);
     }
@@ -220,11 +193,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchRecentlyUpdated(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -247,11 +216,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchRecentlyAdded(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -278,11 +243,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
       const result = await zoro.fetchAtoZList(sort, page);
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -306,13 +267,8 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchSubbedAnime(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (result && Array.isArray(result.data) && result.data.length > 0) {
       await redisSetCache(cacheKey, result, 168);
     }
@@ -333,13 +289,8 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchDubbedAnime(page);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (result && Array.isArray(result.data) && result.data.length > 0) {
       await redisSetCache(cacheKey, result, 168);
     }
@@ -370,13 +321,8 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     }
 
     const result = await zoro.fetchAnimeCategory(format, page);
-
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -407,11 +353,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
       const result = await zoro.fetchGenre(genre, page);
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -440,11 +382,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchEpisodes(animeId);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -471,11 +409,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     const result = await zoro.fetchServers(episodeId);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -512,13 +446,8 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
       const result = await zoro.fetchSources(episodeId, 'hd-2', category);
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
-
       return reply.status(200).send(result);
     },
   );

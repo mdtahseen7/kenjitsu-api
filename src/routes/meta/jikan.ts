@@ -35,13 +35,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.search(q, page, perPage);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     return reply.status(200).send(result);
   });
 
@@ -60,13 +55,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.fetchInfo(malId);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (result && result.data !== null) {
       result.data.status === 'finished airing' ? (duration = 0) : (duration = 168);
       await redisSetCache(cacheKey, result, duration);
@@ -95,11 +85,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.fetchTopAiring(page, perPage, format);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -130,13 +116,8 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.fetchMostPopular(page, perPage, format);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
-
     if (result && Array.isArray(result.data) && result.data.length > 0) {
       await redisSetCache(cacheKey, result, 720);
     }
@@ -159,11 +140,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.fetchTopUpcoming(page, perPage);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -187,11 +164,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
     const result = await jikan.fetchTopMovies(page, perPage);
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -238,11 +211,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       const result = await jikan.fetchSeasonalAnime(season, year, format, page, perPage);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -275,11 +244,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.fetchCurrentSeason(page, perPage, format);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -308,12 +273,9 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     }
 
     const result = await jikan.fetchNextSeason(page, perPage, format);
+
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -335,11 +297,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
     const result = await jikan.fetchAnimeCharacters(malId);
 
     if ('error' in result) {
-      return reply
-        .status(500)
-        .send(
-          `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-        );
+      return reply.status(500).send(result);
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -364,11 +322,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       const result = await jikan.fetchEpisodes(malId, page);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -404,11 +358,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
 
       const result = await jikan.fetchEpisodeInfo(malId, episodeNumber);
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && result.data !== null && typeof result.data === 'object') {
@@ -447,11 +397,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const result = await jikan.fetchProviderId(malId, provider);
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       if (result && result.data !== null && result.provider !== null) {
@@ -492,11 +438,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const result = await jikan.fetchAnimeProviderEpisodes(malId, provider);
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
       if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
         result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 24);
@@ -556,11 +498,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         });
 
       if ('error' in result) {
-        return reply
-          .status(500)
-          .send(
-            `Open an issue with steps to reproduce the error in this repo:https://github.com/middlegear/API/issues. ${result}`,
-          );
+        return reply.status(500).send(result);
       }
 
       return reply.status(200).send(result);
