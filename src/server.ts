@@ -30,7 +30,7 @@ async function FastifyApp() {
   app.setNotFoundHandler((request: FastifyRequest, reply: FastifyReply) => {
     reply.code(404).send({
       message: 'Looks like you are lost. Visit the docs',
-      url: 'https://hakai-documentation.vercel.app',
+      url: 'https://docs.hakai.men',
     });
   });
 
