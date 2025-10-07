@@ -474,7 +474,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         result = await anilist.fetchAnimePaheProviderSources(episodeId, category as (typeof validCategories)[number]);
       } else
         return reply.status(400).send({
-          error: `Unsupported provider for episodeId: '${episodeId}' Fetch the right episodeId from provider episodes endpoint.`,
+          error: `Unsupported  episodeId: '${episodeId}' Fetch the right episodeId from api/anilist/provider-episodes/:anilistId.`,
         });
 
       if ('error' in result) {
