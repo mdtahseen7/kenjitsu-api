@@ -308,7 +308,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
       if (!episodeNumber) {
         return reply.status(400).send({
-          error: "Missing required query parameter: 'episode'. which is a number",
+          error: "Missing required query parameter: 'episode'.",
         });
       }
       if (!tmdbId) {
