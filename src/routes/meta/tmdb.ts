@@ -394,16 +394,16 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
       const seasonNumber = Number(request.query.season);
       const episodeNumber = Number(request.query.episode);
 
-      let result;
-      seasonNumber && episodeNumber
-        ? (result = await tmdb.fetchTvSources(tmdbId, seasonNumber, episodeNumber))
-        : (result = await tmdb.fetchMovieSources(tmdbId));
+      // let result;
+      // seasonNumber && episodeNumber
+      //   ? (result = await tmdb.fetchTvSources(tmdbId, seasonNumber, episodeNumber))
+      //   : (result = await tmdb.fetchMovieSources(tmdbId));
 
-      if ('error' in result) {
-        return reply.status(500).send(result);
-      }
+      // if ('error' in result) {
+      //   return reply.status(500).send(result);
+      // }
 
-      return reply.status(200).send(result);
+      return reply.status(500).send({ error: 'Disabled needs fixing ' });
     },
   );
 }

@@ -157,7 +157,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
 
     if (!type) {
       return reply.status(400).send({
-        error: "Missing required query parameter: 'type'.",
+        error: "Missing required query parameter: 'type'.You are gay if you see this cause you cant read documentation",
       });
     }
 
@@ -194,7 +194,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
     const page = request.query.page || 1;
     if (!type) {
       return reply.status(400).send({
-        error: "Missing required query parameter: 'type'.",
+        error: "Missing required query parameter: 'type'.You are gay if you see this cause you cant read documentation",
       });
     }
     if (type !== 'movie' && type !== 'tv') {
@@ -255,7 +255,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
 
       if (!genre) {
         return reply.status(400).send({
-          error: "Missing required path parameter: 'genre'.",
+          error: "Missing required path parameter: 'genre'.You are gay if you see this cause you cant read documentation",
         });
       }
 
@@ -288,7 +288,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
 
       if (!country) {
         return reply.status(400).send({
-          error: "Missing required path parameter: 'country'.",
+          error: "Missing required path parameter: 'country'.You are gay if you see this cause you cant read documentation",
         });
       }
       const cacheKey = `flix-country-${country}-${page}`;
