@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { HiAnime, type HIGenre, type IAnimeCategory } from '@middlegear/hakai-extensions';
+import { HiAnime, type HIGenre, type IAnimeCategory } from '@middlegear/kenjitsu-extensions';
 
 import { IAnimeCategoryArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';

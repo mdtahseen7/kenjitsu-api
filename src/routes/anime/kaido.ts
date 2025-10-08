@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { Kaido, type HIGenre, type IAnimeCategory } from '@middlegear/hakai-extensions';
+import { Kaido, type HIGenre, type IAnimeCategory } from '@middlegear/kenjitsu-extensions';
 import { IAnimeCategoryArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 const zoro = new Kaido();

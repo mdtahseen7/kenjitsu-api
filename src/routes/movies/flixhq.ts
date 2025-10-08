@@ -1,4 +1,4 @@
-import { FlixHQ, type IMovieGenre, type IMovieCountry } from '@middlegear/hakai-extensions';
+import { FlixHQ, type IMovieGenre, type IMovieCountry } from '@middlegear/kenjitsu-extensions';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyParams, FastifyQuery } from '../../utils/types.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';

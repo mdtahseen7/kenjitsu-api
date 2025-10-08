@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { Anilist, type Seasons, type IMetaFormat } from '@middlegear/hakai-extensions';
+import { Anilist, type Seasons, type IMetaFormat } from '@middlegear/kenjitsu-extensions';
 import { IAMetaFormatArr, IAnimeSeasonsArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
 import { redisSetCache, redisGetCache } from '../../middleware/cache.js';
 

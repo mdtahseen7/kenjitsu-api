@@ -1,4 +1,4 @@
-import { Animekai, type IAnimeCategory, type IMetaFormat, type KaiGenres } from '@middlegear/hakai-extensions';
+import { Animekai, type IAnimeCategory, type IMetaFormat, type KaiGenres } from '@middlegear/kenjitsu-extensions';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { IAMetaFormatArr, IAnimeCategoryArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
