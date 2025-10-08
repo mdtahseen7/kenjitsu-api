@@ -1,7 +1,7 @@
 
 ### **Clone the Repository**  
 ```sh
-git clone https://github.com/middlegear/hakai-api.git
+git clone https://github.com/middlegear/kenjitsu.git
 cd hakai-api
 ```
 

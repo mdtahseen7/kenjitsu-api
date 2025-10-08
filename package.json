@@ -1,5 +1,5 @@
 {
-  "name": "hakai-api",
+  "name": "kenjitsu",
   "version": "1.0.0",
   "description": "A lightweight API that serves metadata and video sources from popular streaming sites.",
   "main": "src/server.ts",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/middlegear/hakai-api.git"
+    "url": "git+https://github.com/middlegear/kenjitsu.git"
   },
   "keywords": [
     "anime",
@@ -23,9 +23,9 @@
   "author": "middlegear",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/middlegear/hakai-api/issues"
+    "url": "https://github.com/middlegear/kenjitsu/issues"
   },
-  "homepage": "https://github.com/middlegear/hakai-api#readme",
+  "homepage": "https://github.com/middlegear/kenjitsu#readme",
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",

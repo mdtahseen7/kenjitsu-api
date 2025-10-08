@@ -4,11 +4,15 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hakai API</title>
+    <title>Kenjitsu</title>
     <meta name="description"
-        content="Hakai API — A lightweight API that serves metadata and video sources from popular streaming sites." />
+        content="A lightweight API that serves metadata and video sources from popular streaming sites." />
     <link rel="icon" type="image/png"
-        href="https://m3jz13d05b.ufs.sh/f/dLgmbGNJLXerMjDNawBovlI3sdb2nkrUQc6OBfxYZGS19XE7" />
+        href="https://m3jz13d05b.ufs.sh/f/dLgmbGNJLXergTlm0iNBd9DUIpQ3M8AnxaYRiXLJjg6oTlcb" />
+
+    <!-- ✅ Add Poppins font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -17,16 +21,15 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                "Helvetica Neue", Arial, sans-serif;
+            font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #e0e0e0;
             min-height: 100svh;
-            overflow-x: hidden;
             background: linear-gradient(135deg, #16012b 0%, #160327 50%, #400174 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             text-align: center;
+            overflow-x: hidden;
         }
 
         .container {
@@ -35,23 +38,44 @@
             animation: fadeIn 0.8s ease-out;
         }
 
+        .logo {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15), transparent 60%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
         h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 2rem;
-            background: linear-gradient(135deg, #b060ff 0%, #8b4bce 50%, #d17fff 100%);
+            font-size: 3.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #b060ff 0%, #8b4bce 50%, #be5ef5e5 100%);
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             background-clip: text;
-            line-height: 1.1;
+            -webkit-text-fill-color: transparent;
             letter-spacing: -0.02em;
+            line-height: 1.1;
+            padding: 0.5rem;
         }
 
         .subtitle {
-            font-size: 1.4rem;
-            color: #c4a5e5;
+            font-size: 1.3rem;
+            color: #c9a9e9;
             margin-bottom: 1.5rem;
             line-height: 1.6;
+            font-weight: 400;
         }
 
         .cta-buttons {
@@ -65,18 +89,19 @@
             display: inline-flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 1.2rem 2.5rem;
-            background: linear-gradient(135deg, #2e0b4e 0%, #3a1a4f 100%);
+            padding: 1rem 1.6rem;
+            background: linear-gradient(135deg, #200836 0%, #311546 100%);
             color: #f2e9ff;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 1.5rem;
+            font-weight: 500;
+            font-size: 1.3rem;
             border-radius: 0.85rem;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .cta-button:hover {
-            background: linear-gradient(135deg, #361455 0%, #4a2370 100%);
+            background: linear-gradient(135deg, #361455 0%, #47206e 100%);
             transform: translateY(-2px);
         }
 
@@ -93,17 +118,27 @@
         }
 
         @media (max-width: 768px) {
+            .logo {
+                width: 160px;
+                height: 160px;
+                margin-bottom: 0.5rem;
+            }
+
             h1 {
                 font-size: 2.5rem;
+                font-weight: 600;
+                padding: 0.5rem;
             }
 
             .subtitle {
-                font-size: 1.1rem;
+                padding: 0.5rem;
+                font-size: 1.05rem;
+                margin-bottom: 1rem;
             }
 
             .cta-button {
-                font-size: 1.1rem;
-                padding: 1rem 2rem;
+                font-size: 1.05rem;
+                padding: 0.9rem 1.7rem;
             }
         }
     </style>
@@ -111,14 +146,18 @@
 
 <body>
     <div class="container">
-        <h1>Hakai API</h1>
+        <div class="logo">
+            <img src="https://m3jz13d05b.ufs.sh/f/dLgmbGNJLXergTlm0iNBd9DUIpQ3M8AnxaYRiXLJjg6oTlcb"
+                alt="Kenjitsu Logo" />
+        </div>
+        <h1>Kenjitsu</h1>
+
         <p class="subtitle">
-            A lightweight API that serves metadata and video sources from popular
-            streaming sites.
+            A lightweight API that serves metadata and video sources from popular streaming sites.
         </p>
         <div class="cta-buttons">
             <a href="https://hakai-documentation.vercel.app" class="cta-button"
-                aria-label="Get started with Hakai API documentation">
+                aria-label="Get started with Kenjitsu API documentation">
                 <span>Get Started</span>
             </a>
         </div>
