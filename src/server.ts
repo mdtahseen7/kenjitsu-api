@@ -23,6 +23,8 @@ const app = Fastify({
   },
 });
 
+app.server.setMaxListeners(20);
+
 async function FastifyApp() {
   checkRedis();
 
