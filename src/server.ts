@@ -23,15 +23,12 @@ const app = Fastify({
   },
 });
 
-app.server.setMaxListeners(20);
-
 async function FastifyApp() {
   checkRedis();
 
   app.register(rateLimitPlugIn, ratelimitOptions);
 
   await app.register(fastifyCors, corsOptions);
-
   await app.register(StaticRoutes);
   await app.register(AnilistRoutes, { prefix: '/api/anilist' });
   await app.register(JikanRoutes, { prefix: '/api/jikan' });
@@ -61,8 +58,12 @@ async function FastifyApp() {
 
 FastifyApp();
 
-// Vercel handler
-export default async function handler(req: FastifyRequest, res: FastifyReply) {
-  await app.ready();
-  app.server.emit('request', req, res);
+let isReady = false;
+
+export default async function handler(request: FastifyRequest, reply: FastifyReply) {
+  if (!isReady) {
+    await app.ready();
+    isReady = true;
+  }
+  app.server.emit('request', request, reply);
 }
