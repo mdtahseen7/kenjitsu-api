@@ -63,7 +63,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const animeId = String(request.params.animeId);
 
@@ -80,7 +80,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
       return reply.status(500).send(result);
     }
     if (result && result.data !== null && result.providerEpisodes.length > 0) {
-      result.data.status?.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 24);
+      result.data.status?.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 2);
       await redisSetCache(cacheKey, result, duration);
     }
     return reply.status(200).send(result);
@@ -358,7 +358,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/episodes/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const animeId = String(request.params.animeId);
 
@@ -380,13 +380,13 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 12);
+      await redisSetCache(cacheKey, result, 2);
     }
     return reply.status(200).send(result);
   });
 
   fastify.get('/servers/:episodeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const episodeId = String(request.params.episodeId);
     if (!episodeId) {
@@ -407,7 +407,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 24);
+      await redisSetCache(cacheKey, result, 6);
     }
 
     return reply.status(200).send(result);

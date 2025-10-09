@@ -56,7 +56,7 @@ export default function AnimepaheRoutes(fastify: FastifyInstance) {
       Array.isArray(result.providerEpisodes) &&
       result.providerEpisodes.length > 0
     ) {
-      result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 12);
+      result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 1);
       await redisSetCache(cacheKey, result, duration);
     }
     return reply.status(200).send(result);
@@ -112,7 +112,7 @@ export default function AnimepaheRoutes(fastify: FastifyInstance) {
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 24);
+      await redisSetCache(cacheKey, result, 12);
     }
     return reply.status(200).send(result);
   });

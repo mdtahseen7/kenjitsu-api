@@ -37,7 +37,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/info/:anilistId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
     let duration;
     const anilistId = Number(request.params.anilistId);
@@ -58,7 +58,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     }
 
     if (result && result.data !== null) {
-      result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 148);
+      result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 24);
       await redisSetCache(cacheKey, result, duration);
     }
 
@@ -66,7 +66,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
@@ -84,7 +84,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 48);
+      await redisSetCache(cacheKey, result, 24);
     }
 
     return reply.status(200).send(result);
@@ -225,7 +225,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/airing-schedule', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${3 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = Number(request.query.page) || 1;
     const score = Number(request.query.score) || 60;
@@ -294,7 +294,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 24);
+      await redisSetCache(cacheKey, result, 178);
     }
 
     return reply.status(200).send(result);
@@ -390,7 +390,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/provider-episodes/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
@@ -420,7 +420,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       }
 
       if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
-        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 24);
+        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 2);
         await redisSetCache(cacheKey, result, duration);
       }
       return reply.status(200).send(result);
