@@ -19,10 +19,10 @@ export default async function StaticRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-    return reply.sendFile('index.html');
+    return reply.status(200).sendFile('index.html');
   });
 
   fastify.setNotFoundHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-    return reply.sendFile('404.html');
+    return reply.status(404).sendFile('404.html');
   });
 }
