@@ -2,7 +2,7 @@
 ### **Clone the Repository**  
 ```sh
 git clone https://github.com/middlegear/kenjitsu.git
-cd kenjitsu-api
+cd kenjitsu
 ```
 
 ### **Install Dependencies**  
