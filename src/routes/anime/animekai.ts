@@ -213,17 +213,24 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
 
       const episodeId = String(request.params.episodeId);
       const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
+      const server = (request.query.server as 'server-1' | 'server-2') || 'server-1';
 
       if (!episodeId) {
         return reply.status(400).send({ error: 'Missing required params: episodeId' });
       }
 
-      if (!['sub', 'dub', 'raw'].includes(category)) {
+      if (!['server-1', 'server-2'].includes(server)) {
         return reply.status(400).send({
-          error: `Invalid category: '${category}'. Expected one of 'sub','dub','raw'.`,
+          error: `Invalid  streaming server selected: '${server}'. Expected one of 'server-1' or 'server-2'.`,
         });
       }
-      const result = await animekai.fetchServers(episodeId, category);
+
+      if (!['sub', 'dub', 'raw'].includes(category)) {
+        return reply.status(400).send({
+          error: `Invalid category: '${category}'. Expected one of 'sub','dub' or 'raw'.`,
+        });
+      }
+      const result = await animekai.fetchServers(episodeId, category, server);
 
       if ('error' in result) {
         return reply.status(500).send(result);
@@ -240,12 +247,19 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
 
       const episodeId = String(request.params.episodeId);
       const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
+      const server = (request.query.server as 'server-1' | 'server-2') || 'server-1';
 
       if (!episodeId) {
         return reply.status(400).send({ error: 'Missing required params: episodeId' });
       }
 
-      const result = await animekai.fetchSources(episodeId, category);
+      if (!['server-1', 'server-2'].includes(server)) {
+        return reply.status(400).send({
+          error: `Invalid  streaming server selected: '${server}'. Expected one of 'server-1' or 'server-2'.`,
+        });
+      }
+
+      const result = await animekai.fetchSources(episodeId, category, server);
 
       if ('error' in result) {
         return reply.status(500).send(result);
