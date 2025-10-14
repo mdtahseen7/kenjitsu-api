@@ -386,7 +386,7 @@ export default async function HianimeRoutes(fastify: FastifyInstance) {
     }
 
     if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 1);
+      await redisSetCache(cacheKey, result, 4);
     }
     return reply.status(200).send(result);
   });

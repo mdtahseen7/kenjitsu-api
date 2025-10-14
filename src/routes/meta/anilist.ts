@@ -351,7 +351,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/get-provider/:anilistId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${4 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
@@ -379,8 +379,8 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         return reply.status(500).send(result);
       }
 
-      if (result && result.data !== null && result.provider !== null) {
-        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 148);
+      if (result && result.data !== null && result.provider !== null && result.data.format.toLowerCase() === 'tv') {
+        result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 24);
         await redisSetCache(cacheKey, result, duration);
       }
       return reply.status(200).send(result);
@@ -419,7 +419,13 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
         return reply.status(500).send(result);
       }
 
-      if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
+      if (
+        result &&
+        result.data !== null &&
+        Array.isArray(result.providerEpisodes) &&
+        result.providerEpisodes.length > 0 &&
+        result.data.format.toLowerCase() === 'tv'
+      ) {
         result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 2);
         await redisSetCache(cacheKey, result, duration);
       }
