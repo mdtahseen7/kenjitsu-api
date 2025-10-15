@@ -1,55 +1,17 @@
+# Kenjitsu API
 
-### **Clone the Repository**  
-```sh
-git clone https://github.com/middlegear/kenjitsu.git
-cd kenjitsu
-```
+A lightweight Node.js API built with Fastify.  
+It works as a wrapper for **kenjitsu-extensions** (scrapers), exposing them through a clean and unified API.
 
-### **Install Dependencies**  
-```sh
-pnpm install
-```
+## Features
+- 🚀 Fastify-based, high performance  
+- 📺 Anime, Movies, and TV endpoints  
+- 🔌 Powered by kenjitsu-extensions 
+- 🌐 JSON responses ready to consume in apps  
 
-### **Set Up Environment Variables**  
-Create a `.env` file in the root directory:
+## Documentation
+Full API reference and usage examples are available at [kenjitsu-docs](https://kenjitsu-docs.vercel.app)
 
-```
-
-# ========================
-# Rate Limiting
-# ========================
-# Maximum API requests allowed per second (defaults to 6)
-MAX_API_REQUESTS = 6
-# Duration (in ms) to track requests for rate limiting (defaults to 1000 ms)
-WINDOW_IN_MS = 1000
-
-# ========================
-# Redis Configuration (Optional but Recommended)
-# ========================
-REDIS_PORT =
-REDIS_HOST = 
-REDIS_PASSWORD =
-
-# ========================
-
-
-
-# ========================
-# CORS Configuration
-# ========================
-# Allowed origins (default to allow all)
-ALLOWED_ORIGINS = *
-
-# ========================
-# Disable vercel build cache
-# ==========================
-VERCEL_FORCE_NO_BUILD_CACHE = 1
-```
-
-### **Start the Server**  
-```sh
-pnpm run start
-```
-The API will run on **`http://localhost:3000`**.
-
----
+> **Disclaimer:**  
+> This project is for **educational purposes only**.The content provided by the API is unofficial and has no affiliation with any third-party providers.  
+> The API does not host, own, or distribute content. All data remains the property of its respective owners.
