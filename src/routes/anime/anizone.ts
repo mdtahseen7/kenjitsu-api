@@ -56,7 +56,7 @@ export default function AnizoneRoutes(fastify: FastifyInstance) {
       return reply.status(200).send(cachedData);
     }
 
-    const result = await anizone.fetchInfo(animeId);
+    const result = await anizone.fetchAnimeInfo(animeId);
     if ('error' in result) {
       return reply.status(500).send(result);
     }
@@ -67,7 +67,9 @@ export default function AnizoneRoutes(fastify: FastifyInstance) {
       Array.isArray(result.providerEpisodes) &&
       result.providerEpisodes.length > 0
     ) {
-      result.data.status.toLowerCase() === 'completed' ? (duration = 0) : (duration = 1);
+      result.data.status.toLowerCase() === 'completed' && result.providerEpisodes.length === result.data.totalEpisodes
+        ? (duration = 0)
+        : (duration = 1);
       await redisSetCache(cacheKey, result, duration);
     }
     return reply.status(200).send(result);
