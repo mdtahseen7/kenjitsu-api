@@ -1,9 +1,21 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { Anilist, type Seasons, type IMetaFormat } from '@middlegear/kenjitsu-extensions';
+import {
+  Anilist,
+  AllAnime,
+  Anizone,
+  Animepahe,
+  HiAnime,
+  type Seasons,
+  type IMetaFormat,
+} from '@middlegear/kenjitsu-extensions';
 import { IAMetaFormatArr, IAnimeSeasonsArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
 import { redisSetCache, redisGetCache } from '../../middleware/cache.js';
 
 const anilist = new Anilist();
+const allanime = new AllAnime();
+const anizone = new Anizone();
+const hianime = new HiAnime();
+const animepahe = new Animepahe();
 
 export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -354,16 +366,16 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', `s-maxage=${4 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
-      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
+      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
 
       if (!anilistId) {
         return reply.status(400).send({
           error: "Missing required path parameter: 'anilistId'.",
         });
       }
-      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe') {
+      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe' && provider !== 'anizone') {
         return reply.status(400).send({
-          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe `,
+          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime' or 'animepahe' or 'anizone' `,
         });
       }
 
@@ -393,16 +405,16 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
       const anilistId = Number(request.params.anilistId);
-      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
+      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
 
       if (!anilistId) {
         return reply.status(400).send({
           error: "Missing required path parameter: 'anilistId'.",
         });
       }
-      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe') {
+      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe' && provider !== 'anizone') {
         return reply.status(400).send({
-          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe `,
+          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe' or 'anizone' `,
         });
       }
 
@@ -469,15 +481,17 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       let result;
 
       if (episodeId.includes('hianime')) {
-        result = await anilist.fetchHianimeProviderSources(
+        result = await hianime.fetchSources(
           episodeId,
-          category as (typeof validCategories)[number],
           server as (typeof validServers)[number],
+          category as (typeof validCategories)[number],
         );
       } else if (episodeId.includes('allanime')) {
-        result = await anilist.fetchAllAnimeProviderSources(episodeId, category as (typeof validCategories)[number]);
+        result = await allanime.fetchSources(episodeId, category as (typeof validCategories)[number]);
       } else if (episodeId.includes('pahe')) {
-        result = await anilist.fetchAnimePaheProviderSources(episodeId, category as (typeof validCategories)[number]);
+        result = await animepahe.fetchSources(episodeId, category as (typeof validCategories)[number]);
+      } else if (episodeId.includes('anizone')) {
+        result = await anizone.fetchSources(episodeId);
       } else
         return reply.status(400).send({
           error: `Unsupported  episodeId: '${episodeId}' Fetch the right episodeId from api/anilist/provider-episodes/:anilistId.`,

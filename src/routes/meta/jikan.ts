@@ -1,10 +1,22 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { Jikan, type Seasons, type IMetaFormat } from '@middlegear/kenjitsu-extensions';
+import {
+  Jikan,
+  type Seasons,
+  type IMetaFormat,
+  AllAnime,
+  Animepahe,
+  Anizone,
+  HiAnime,
+} from '@middlegear/kenjitsu-extensions';
 
 import { type FastifyQuery, type FastifyParams, IAMetaFormatArr, IAnimeSeasonsArr } from '../../utils/types.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 
 const jikan = new Jikan();
+const allanime = new AllAnime();
+const anizone = new Anizone();
+const hianime = new HiAnime();
+const animepahe = new Animepahe();
 
 export default async function JikanRoutes(fastify: FastifyInstance) {
   fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -306,83 +318,21 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get(
-    '/episodes/:malId',
-    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-      const malId = Number(request.params.malId);
-      const page = Number(request.query.page) || 1;
-
-      const cacheKey = `mal-episodes-${malId}-${page}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.status(200).send(cachedData);
-      }
-
-      const result = await jikan.fetchEpisodes(malId, page);
-      if ('error' in result) {
-        return reply.status(500).send(result);
-      }
-
-      if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 720);
-      }
-
-      return reply.status(200).send(result);
-    },
-  );
-
-  fastify.get(
-    '/episode-info/:malId',
-    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-      const malId = Number(request.params.malId);
-      const episodeNumber = Number(request.query.episode);
-
-      if (!malId) {
-        return reply.status(400).send({
-          error: "Missing required path parameter: 'malId'.",
-        });
-      }
-      if (!episodeNumber) {
-        return reply.status(400).send({
-          error: "Missing required query parameter: 'episode'. which is a number",
-        });
-      }
-      const cacheKey = `mal-episode-info-${malId}-${episodeNumber}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.status(200).send(cachedData);
-      }
-
-      const result = await jikan.fetchEpisodeInfo(malId, episodeNumber);
-      if ('error' in result) {
-        return reply.status(500).send(result);
-      }
-
-      if (result && result.data !== null && typeof result.data === 'object') {
-        await redisSetCache(cacheKey, result, 0);
-      }
-      return reply.status(200).send(result);
-    },
-  );
-
-  fastify.get(
     '/get-provider/:malId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const malId = Number(request.params.malId);
-      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
+      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
 
       if (!malId) {
         return reply.status(400).send({
           error: "Missing required path parameter: 'malId'.",
         });
       }
-      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe') {
+      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe' && provider !== 'anizone') {
         return reply.status(400).send({
-          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe `,
+          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe' or 'anizone'`,
         });
       }
 
@@ -413,16 +363,16 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const malId = Number(request.params.malId);
-      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe') || 'hianime';
+      const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
 
       if (!malId) {
         return reply.status(400).send({
           error: "Missing required path parameter: 'malId'.",
         });
       }
-      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe') {
+      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe' && provider !== 'anizone') {
         return reply.status(400).send({
-          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe `,
+          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe' or 'anizone' `,
         });
       }
 
@@ -488,20 +438,21 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       let result;
 
       if (episodeId.includes('hianime')) {
-        result = await jikan.fetchHianimeProviderSources(
+        result = await hianime.fetchSources(
           episodeId,
-          category as (typeof validCategories)[number],
           server as (typeof validServers)[number],
+          category as (typeof validCategories)[number],
         );
       } else if (episodeId.includes('allanime')) {
-        result = await jikan.fetchAllAnimeProviderSources(episodeId, category as (typeof validCategories)[number]);
+        result = await allanime.fetchSources(episodeId, category as (typeof validCategories)[number]);
       } else if (episodeId.includes('pahe')) {
-        result = await jikan.fetchAnimePaheProviderSources(episodeId, category as (typeof validCategories)[number]);
+        result = await animepahe.fetchSources(episodeId, category as (typeof validCategories)[number]);
+      } else if (episodeId.includes('anizone')) {
+        result = await anizone.fetchSources(episodeId);
       } else
         return reply.status(400).send({
-          error: `Unsupported episodeId: '${episodeId}' Fetch the right episodeId from api/jikan/provider-episodes/:malId. `,
+          error: `Unsupported  episodeId: '${episodeId}' Fetch the right episodeId from api/anilist/provider-episodes/:anilistId.`,
         });
-
       if ('error' in result) {
         return reply.status(500).send(result);
       }
