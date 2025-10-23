@@ -34,11 +34,17 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
 
     const page = Number(request.query.page) || 1;
 
-    const result = await animekai.search(q, page);
-    if ('error' in result) {
-      return reply.status(500).send(result);
+    try {
+      const result = await animekai.search(q, page);
+      if ('error' in result) {
+        request.log.error({ result, q, page }, `External API Error: Failed to fetch search results for query:${q}`);
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, `Internal runtime error occured while querying search`);
+      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
     }
-    return reply.status(200).send(result);
   });
 
   fastify.get('/recently-updated', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -53,13 +59,19 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const result = await animekai.fetchRecentlyUpdated(category, page);
+    try {
+      const result = await animekai.fetchRecentlyUpdated(category, page);
 
-    if ('error' in result) {
-      return reply.status(500).send(result);
+      if ('error' in result) {
+        request.log.error({ result, category, page }, `External API Error: Failed to fetch recently updated anime`);
+        return reply.status(500).send(result);
+      }
+
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, `Internal runtime error occured while fetching recently updated anime`);
+      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
     }
-
-    return reply.status(200).send(result);
   });
 
   fastify.get('/recently-added', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -74,13 +86,19 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const result = await animekai.fetchRecentlyAdded(format, page);
+    try {
+      const result = await animekai.fetchRecentlyAdded(format, page);
 
-    if ('error' in result) {
-      return reply.status(500).send(result);
+      if ('error' in result) {
+        request.log.error({ result, format, page }, `External API Error: Failed to fetch recently added anime`);
+        return reply.status(500).send(result);
+      }
+
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, `Internal runtime error occured while fetching recently added anime`);
+      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
     }
-
-    return reply.status(200).send(result);
   });
 
   fastify.get('/recently-completed', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -95,13 +113,19 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const result = await animekai.fetchRecentlyCompleted(format, page);
+    try {
+      const result = await animekai.fetchRecentlyCompleted(format, page);
 
-    if ('error' in result) {
-      return reply.status(500).send(result);
+      if ('error' in result) {
+        request.log.error({ result, format, page }, `External API Error: Failed to fetch recently completed anime`);
+        return reply.status(500).send(result);
+      }
+
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, `Internal runtime error occured while fetching recently completed anime`);
+      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
     }
-
-    return reply.status(200).send(result);
   });
 
   fastify.get('/category', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -117,13 +141,19 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const result = await animekai.fetchAnimeCategory(format, page);
+    try {
+      const result = await animekai.fetchAnimeCategory(format, page);
 
-    if ('error' in result) {
-      return reply.status(500).send(result);
+      if ('error' in result) {
+        request.log.error({ result, format, page }, `External API Error: Failed to fetch anime of format:${format}`);
+        return reply.status(500).send(result);
+      }
+
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, 'Internal runtime error occured while fetching anime category');
+      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
     }
-
-    return reply.status(200).send(result);
   });
 
   fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
@@ -139,12 +169,18 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const result = await animekai.fetchTopAiring(format, page);
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
+    try {
+      const result = await animekai.fetchTopAiring(format, page);
+      if ('error' in result) {
+        request.log.error({ result, format, page }, `External API Error: Failed to fetch top airing anime:${format}`);
+        return reply.status(500).send(result);
+      }
 
-    return reply.status(200).send(result);
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, 'Internal runtime occurred processing top-airing');
+      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
+    }
   });
 
   fastify.get(
@@ -160,14 +196,19 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
           error: "Missing required path parameter: 'genre'.",
         });
       }
+      try {
+        const result = await animekai.fetchGenres(genre, page);
 
-      const result = await animekai.fetchGenres(genre, page);
+        if ('error' in result) {
+          request.log.error({ result }, `External API Error: Failed to fetch genre:${genre}`);
+          return reply.status(500).send(result);
+        }
 
-      if ('error' in result) {
-        return reply.status(500).send(result);
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, 'Internal runtime error occurred processing genres');
+        return reply.status(500).send({ error: `Internal server error occured: ${error}` });
       }
-
-      return reply.status(200).send(result);
     },
   );
 
@@ -187,23 +228,28 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     if (cachedData) {
       return reply.status(200).send(cachedData);
     }
+    try {
+      const result = await animekai.fetchAnimeInfo(animeId);
 
-    const result = await animekai.fetchAnimeInfo(animeId);
+      if ('error' in result) {
+        request.log.error({ result, animeId }, `External API Error: Failed to fetch info for: ${animeId} `);
+        return reply.status(500).send(result);
+      }
+      if (
+        result.data !== null &&
+        Array.isArray(result.providerEpisodes) &&
+        result.providerEpisodes.length > 0 &&
+        result.data.type?.toLowerCase() !== 'movie'
+      ) {
+        result.data.status?.toLowerCase() === 'completed' ? (duration = 0) : (duration = 1);
 
-    if ('error' in result) {
-      return reply.status(500).send(result);
+        await redisSetCache(cacheKey, result, duration);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, 'Internal runtime error processing animeinfo');
+      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
     }
-    if (
-      result.data !== null &&
-      Array.isArray(result.providerEpisodes) &&
-      result.providerEpisodes.length > 0 &&
-      result.data.type?.toLowerCase() !== 'movie'
-    ) {
-      result.data.status?.toLowerCase() === 'completed' ? (duration = 0) : (duration = 1);
-
-      await redisSetCache(cacheKey, result, duration);
-    }
-    return reply.status(200).send(result);
   });
 
   fastify.get(
@@ -230,13 +276,22 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
           error: `Invalid category: '${category}'. Expected one of 'sub','dub' or 'raw'.`,
         });
       }
-      const result = await animekai.fetchServers(episodeId, category, server);
+      try {
+        const result = await animekai.fetchServers(episodeId, category, server);
 
-      if ('error' in result) {
-        return reply.status(500).send(result);
+        if ('error' in result) {
+          request.log.error(
+            { result, server, category, episodeId },
+            `External API Error: Failed to fetch servers for episode ${episodeId}`,
+          );
+          return reply.status(500).send(result);
+        }
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, `Internal runtime error fetching servers for episode ${episodeId}`);
+        return reply.status(500).send({ error: `Internal server error occured: ${error}` });
       }
-
-      return reply.status(200).send(result);
     },
   );
 
@@ -258,14 +313,22 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
           error: `Invalid  streaming server selected: '${server}'. Expected one of 'server-1' or 'server-2'.`,
         });
       }
+      try {
+        const result = await animekai.fetchSources(episodeId, category, server);
 
-      const result = await animekai.fetchSources(episodeId, category, server);
+        if ('error' in result) {
+          request.log.error(
+            { result, server, episodeId, category },
+            `External API Error: Failed to fetch sources for episode ${episodeId}`,
+          );
+          return reply.status(500).send(result);
+        }
 
-      if ('error' in result) {
-        return reply.status(500).send(result);
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, `Internal runtime error fetching sources for episode ${episodeId}`);
+        return reply.status(500).send({ error: `Internal server error occured: ${error}` });
       }
-
-      return reply.status(200).send(result);
     },
   );
 }

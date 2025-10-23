@@ -21,7 +21,28 @@ import { checkRedis } from './config/redis.js';
 events.defaultMaxListeners = 25;
 
 const app = Fastify({
-  logger: { level: 'info' },
+  logger: {
+    level: 'error',
+    serializers: {
+      req: req => ({
+        method: req.method,
+        url: req.url,
+        query: req.query,
+        params: req.params,
+        headers: {
+          'user-agent': req.headers['user-agent'],
+        },
+      }),
+      error: error => ({
+        type: error.name,
+        message: error.message,
+        stack: error.stack,
+      }),
+      res: res => ({
+        statusCode: res.statusCode,
+      }),
+    },
+  },
   routerOptions: {
     maxParamLength: 1000,
   },
