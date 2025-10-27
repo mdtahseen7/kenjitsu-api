@@ -6,18 +6,12 @@ import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 const animepahe = new Animepahe();
 
 export default async function AnimepaheRoutes(fastify: FastifyInstance) {
-  fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/anime/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
-    let q = request.query.q?.trim() ?? '';
-    q = decodeURIComponent(q);
-    q = q.replace(/[^\w\s\-_.]/g, '');
 
-    if (!q.length) {
-      return reply.status(400).send({ error: "Missing required query params: 'q' " });
-    }
-    if (q.length > 1000) {
-      return reply.status(400).send({ error: 'query string too long' });
-    }
+    const { q } = request.query;
+    if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
+    if (q.length > 1000) return reply.status(400).send({ error: 'Query string too long' });
 
     try {
       const result = await animepahe.search(q);
@@ -29,12 +23,12 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
 
       return reply.status(200).send(result);
     } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while querying search results`);
-      return reply.status(500).send({ error: `Internal server error occured:${error}` });
+      request.log.error({ error: error }, `Internal runtime error occurred while querying search results`);
+      return reply.status(500).send({ error: `Internal server error occurred:${error}` });
     }
   });
 
-  fastify.get('/recent-episodes', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/anime/updates', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = request.query.page || 1;
@@ -48,32 +42,32 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
 
       return reply.status(200).send(result);
     } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while fetching recent episodes`);
-      return reply.status(500).send({ error: `Internal server occured:${error}` });
+      request.log.error({ error: error }, `Internal runtime error occurred while fetching recent episodes`);
+      return reply.status(500).send({ error: `Internal server occurred:${error}` });
     }
   });
 
-  fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+  fastify.get('/anime/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${2 * 60 * 60}, stale-while-revalidate=300`);
 
-    const animeId = request.params.animeId;
+    const id = request.params.id;
 
-    if (!animeId) {
+    if (!id) {
       return reply.status(400).send({
-        error: `Missing required path paramater: 'animeId'`,
+        error: `Missing required path paramater: 'id'`,
       });
     }
     let duration;
-    const cacheKey = `animepahe-info-${animeId}`;
+    const cacheKey = `animepahe-info-${id}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) {
       return reply.status(200).send(cachedData);
     }
 
     try {
-      const result = await animepahe.fetchAnimeInfo(animeId);
+      const result = await animepahe.fetchAnimeInfo(id);
       if ('error' in result) {
-        request.log.error({ result, animeId }, `External API Error: Failed to fetch anime info`);
+        request.log.error({ result, id }, `External API Error: Failed to fetch anime info`);
         return reply.status(500).send(result);
       }
       if (
@@ -88,32 +82,32 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
       }
       return reply.status(200).send(result);
     } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while fetching anime info`);
-      return reply.status(500).send({ error: `Internal server occured:${error}` });
+      request.log.error({ error: error }, `Internal runtime error occurred while fetching anime info`);
+      return reply.status(500).send({ error: `Internal server occurred:${error}` });
     }
   });
 
-  fastify.get('/episodes/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+  fastify.get('/anime/:id/episodes', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
-    const animeId = request.params.animeId;
+    const id = request.params.id;
 
-    if (!animeId) {
+    if (!id) {
       return reply.status(400).send({
-        error: `Missing required path paramater: 'animeId'`,
+        error: `Missing required path paramater: 'id'`,
       });
     }
 
-    const cacheKey = `pahe-episodes-${animeId}`;
+    const cacheKey = `pahe-episodes-${id}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) {
       return reply.status(200).send(cachedData);
     }
 
     try {
-      const result = await animepahe.fetchEpisodes(animeId);
+      const result = await animepahe.fetchEpisodes(id);
       if ('error' in result) {
-        request.log.error({ result, animeId }, `External API Error: Failed to fetch episodes`);
+        request.log.error({ result, id }, `External API Error: Failed to fetch episodes`);
         return reply.status(500).send(result);
       }
       if (result && Array.isArray(result.data) && result.data.length > 0) {
@@ -121,53 +115,17 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
       }
       return reply.status(200).send(result);
     } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while fetching episodes`);
-      return reply.status(500).send({ error: `Internal server occured:${error}` });
-    }
-  });
-
-  fastify.get('/servers/:episodeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
-
-    const episodeId = request.params.episodeId;
-
-    if (!episodeId) {
-      return reply.status(400).send({
-        error: `Missing required path paramater: 'episodeId'`,
-      });
-    }
-
-    const cacheKey = `pahe-servers-${episodeId}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    try {
-      const result = await animepahe.fetchServers(episodeId);
-      if ('error' in result) {
-        request.log.error({ result, episodeId }, `External API Error: Failed to fetch servers`);
-        return reply.status(500).send(result);
-      }
-
-      if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 12);
-      }
-      return reply.status(200).send(result);
-    } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while fetching streaming server info`);
-      return reply.status(500).send({ error: `Internal server occured:${error}` });
+      request.log.error({ error: error }, `Internal runtime error occurred while fetching episodes`);
+      return reply.status(500).send({ error: `Internal server occurred:${error}` });
     }
   });
 
   fastify.get(
-    '/watch/:episodeId',
-    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
+    '/episode/:episodeId/servers',
+    async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const episodeId = request.params.episodeId;
-
-      const category = (request.query.category as 'sub' | 'dub' | 'raw') || 'sub';
 
       if (!episodeId) {
         return reply.status(400).send({
@@ -175,18 +133,61 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
         });
       }
 
+      const cacheKey = `pahe-servers-${episodeId}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       try {
-        const result = await animepahe.fetchSources(episodeId, category);
+        const result = await animepahe.fetchServers(episodeId);
+        if ('error' in result) {
+          request.log.error({ result, episodeId }, `External API Error: Failed to fetch servers`);
+          return reply.status(500).send(result);
+        }
+
+        if (result && Array.isArray(result.data) && result.data.length > 0) {
+          await redisSetCache(cacheKey, result, 12);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, `Internal runtime error occurred while fetching streaming server info`);
+        return reply.status(500).send({ error: `Internal server occurred:${error}` });
+      }
+    },
+  );
+
+  fastify.get(
+    '/sources/:episodeId',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
+
+      const episodeId = request.params.episodeId;
+
+      const version = (request.query.version as 'sub' | 'dub') || 'sub';
+      if (!['sub', 'dub', 'raw'].includes(version)) {
+        return reply.status(400).send({
+          error: `Invalid version picked: '${version}'. Expected one of 'sub','dub'.`,
+        });
+      }
+      if (!episodeId) {
+        return reply.status(400).send({
+          error: `Missing required path paramater: 'episodeId'`,
+        });
+      }
+
+      try {
+        const result = await animepahe.fetchSources(episodeId, version);
 
         if ('error' in result) {
-          request.log.error({ result, episodeId, category }, `External API Error: Failed to fetch sources`);
+          request.log.error({ result, episodeId, version }, `External API Error: Failed to fetch sources`);
           return reply.status(500).send(result);
         }
 
         return reply.status(200).send(result);
       } catch (error) {
-        request.log.error({ error: error }, `Internal runtime error occured while fetching sources`);
-        return reply.status(500).send({ error: `Internal server occured:${error}` });
+        request.log.error({ error: error }, `Internal runtime error occurred while fetching sources`);
+        return reply.status(500).send({ error: `Internal server occurred:${error}` });
       }
     },
   );

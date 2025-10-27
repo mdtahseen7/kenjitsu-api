@@ -6,72 +6,66 @@ import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 const anizone = new Anizone();
 
 export default async function AnizoneRoutes(fastify: FastifyInstance) {
-  fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/anime/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
-    let q = request.query.q?.trim() ?? '';
-    q = decodeURIComponent(q);
-    q = q.replace(/[^\w\s\-_.]/g, '');
+    const { q } = request.query;
+    if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
+    if (q.length > 1000) return reply.status(400).send({ error: 'Query string too long' });
 
-    if (!q.length) {
-      return reply.status(400).send({ error: "Missing required query params: 'q' " });
-    }
-    if (q.length > 1000) {
-      return reply.status(400).send({ error: 'query string too long' });
-    }
     try {
       const result = await anizone.search(q);
 
       if ('error' in result) {
-        request.log.error({ result, q }, `External API Error: Failed to fetch search results for query:${q}`);
+        request.log.error({ result, q }, `External API Error`);
         return reply.status(500).send(result);
       }
 
       return reply.status(200).send(result);
     } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while querying search results`);
-      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
+      request.log.error({ error: error }, `Internal runtime error occurred while querying search results`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
   });
 
-  fastify.get('/recent-updates', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/anime/updates', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     try {
       const result = await anizone.fetchUpdates();
       if ('error' in result) {
-        request.log.error({ result }, `External API Error: Failed to fetch recent updates`);
+        request.log.error({ result }, `External API Error`);
         return reply.status(500).send(result);
       }
 
       return reply.status(200).send(result);
     } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while fetching recent updates`);
-      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
+      request.log.error({ error: error }, `Internal runtime error occurred while fetching recent updates`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
   });
 
-  fastify.get('/info/:animeId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+  fastify.get('/anime/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${2 * 60 * 60}, stale-while-revalidate=300`);
 
-    const animeId = request.params.animeId;
+    const id = request.params.id;
 
-    if (!animeId) {
+    if (!id) {
       return reply.status(400).send({
-        error: `Missing required path paramater: 'animeId'`,
+        error: `Missing required path paramater: 'id'`,
       });
     }
     let duration;
-    const cacheKey = `anizone-info-${animeId}`;
+    const cacheKey = `anizone-info-${id}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) {
       return reply.status(200).send(cachedData);
     }
 
     try {
-      const result = await anizone.fetchAnimeInfo(animeId);
+      const result = await anizone.fetchAnimeInfo(id);
 
       if ('error' in result) {
-        request.log.error({ result, animeId }, `External API Error: Failed to fetch anime info`);
+        request.log.error({ result, id }, `External API Error: Failed to fetch anime info`);
         return reply.status(500).send(result);
       }
       if (
@@ -88,13 +82,13 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
       }
       return reply.status(200).send(result);
     } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occured while fetching anime info`);
-      return reply.status(500).send({ error: `Internal server error occured: ${error}` });
+      request.log.error({ error: error }, `Internal runtime error occurred while fetching anime info`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
   });
 
   fastify.get(
-    '/watch/:episodeId',
+    '/sources/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
 
@@ -115,8 +109,8 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
 
         return reply.status(200).send(result);
       } catch (error) {
-        request.log.error({ error: error }, `Internal runtime error occured while fetching sources`);
-        return reply.status(500).send({ error: `Internal server error occured: ${error}` });
+        request.log.error({ error: error }, `Internal runtime error occurred while fetching sources`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
       }
     },
   );

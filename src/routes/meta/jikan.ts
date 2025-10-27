@@ -9,7 +9,14 @@ import {
   HiAnime,
 } from '@middlegear/kenjitsu-extensions';
 
-import { type FastifyQuery, type FastifyParams, IAMetaFormatArr, IAnimeSeasonsArr } from '../../utils/types.js';
+import {
+  type FastifyQuery,
+  type FastifyParams,
+  IAMetaFormatArr,
+  IAnimeSeasonsArr,
+  allowedProviders,
+  JikanList,
+} from '../../utils/types.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 
 const jikan = new Jikan();
@@ -19,180 +26,173 @@ const hianime = new HiAnime();
 const animepahe = new Animepahe();
 
 export default async function JikanRoutes(fastify: FastifyInstance) {
-  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-    return reply.send({
-      message: 'Welcome to Jikan metadata provider',
-    });
-  });
-
-  fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/anime/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
 
-    let q = request.query.q?.trim() ?? '';
-    q = decodeURIComponent(q);
-    q = q.replace(/[^\w\s\-_.]/g, '');
+    const { q, page = 1 } = request.query;
+    if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
+    if (q.length > 1000) return reply.status(400).send({ error: 'Query string too long' });
 
-    if (!q.length) {
-      return reply.status(400).send({ error: "Missing required query params: 'q' " });
-    }
-    if (q.length > 1000) {
-      return reply.status(400).send({ error: 'query string too long' });
-    }
-
-    const page = Number(request.query.page) || 1;
     let perPage = Number(request.query.perPage) || 20;
     perPage = Math.min(perPage, 25);
 
-    const result = await jikan.search(q, page, perPage);
+    try {
+      const result = await jikan.search(q, page, perPage);
 
-    if ('error' in result) {
-      return reply.status(500).send(result);
+      if ('error' in result) {
+        request.log.error({ result, q, page, perPage }, `External API Error: Failed to fetch search results`);
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, `Internal runtime error occurred while querying search results`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
-    return reply.status(200).send(result);
   });
 
-  fastify.get('/info/:malId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+  fastify.get('/anime/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-    const malId = Number(request.params.malId);
+    const id = Number(request.params.id);
 
     let duration;
-    const cacheKey = `mal-info-${malId}`;
+    const cacheKey = `mal-info-${id}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) {
       return reply.status(200).send(cachedData);
     }
 
-    const result = await jikan.fetchInfo(malId);
+    try {
+      const result = await jikan.fetchInfo(id);
 
-    if ('error' in result) {
-      return reply.status(500).send(result);
+      if ('error' in result) {
+        request.log.error({ result, id }, `External API Error: Failed to fetch animeInfo`);
+        return reply.status(500).send(result);
+      }
+      if (result && result.data !== null) {
+        result.data.status === 'finished airing' ? (duration = 0) : (duration = 168);
+        await redisSetCache(cacheKey, result, duration);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, `Internal runtime error occurred while fetching animeinfo`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
-    if (result && result.data !== null) {
-      result.data.status === 'finished airing' ? (duration = 0) : (duration = 168);
-      await redisSetCache(cacheKey, result, duration);
-    }
-    return reply.status(200).send(result);
   });
 
-  fastify.get('/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
-
-    const page = Number(request.query.page) || 1;
-    let perPage = Number(request.query.perPage) || 20;
-    perPage = Math.min(perPage, 25);
-    const format = (request.query.format as IMetaFormat) || 'TV';
-
-    if (!IAMetaFormatArr.includes(format)) {
-      return reply.status(400).send({
-        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
-      });
-    }
-    const cacheKey = `mal-top-airing-${format}-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-    const result = await jikan.fetchTopAiring(page, perPage, format);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 24);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/most-popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const page = Number(request.query.page) || 1;
-    let perPage = Number(request.query.perPage) || 20;
-    perPage = Math.min(perPage, 25);
-
-    const format = (request.query.format as IMetaFormat) || 'TV';
-
-    if (!IAMetaFormatArr.includes(format)) {
-      return reply.status(400).send({
-        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
-      });
-    }
-    const cacheKey = `mal-most-popular-${format}-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-    const result = await jikan.fetchMostPopular(page, perPage, format);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 720);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
-
-    const page = Number(request.query.page) || 1;
-    let perPage = Number(request.query.perPage) || 20;
-    perPage = Math.min(perPage, 25);
-
-    const cacheKey = `mal-upcoming-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    const result = await jikan.fetchTopUpcoming(page, perPage);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/movies', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
-
-    const page = Number(request.query.page) || 1;
-    let perPage = Number(request.query.perPage) || 20;
-    perPage = Math.min(perPage, 25);
-
-    const cacheKey = `mal-movies-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    const result = await jikan.fetchTopMovies(page, perPage);
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-
-    return reply.status(200).send(result);
-  });
-
+  // changed type from query params to path params  i can use anime/top/:category
   fastify.get(
-    '/season',
+    '/anime/top/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
+
+      const page = Number(request.query.page) || 1;
+      let perPage = Number(request.query.perPage) || 20;
+      perPage = Math.min(perPage, 25);
+
+      const format = (request.query.format as IMetaFormat) || 'TV';
+      const category = request.params.category as 'favorite' | 'popular' | 'rating' | 'airing' | 'upcoming';
+
+      if (!IAMetaFormatArr.includes(format)) {
+        return reply.status(400).send({
+          error: `Invalid query param format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
+        });
+      }
+
+      if (!JikanList.includes(category)) {
+        return reply.status(400).send({
+          error: `Invalid query param type: '${category}'. Expected one of ${JikanList.join(', ')}.`,
+        });
+      }
+
+      const cacheKey = `mal-${category}-${format}-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
+      try {
+        let result;
+        switch (category) {
+          case 'popular':
+            result = await jikan.fetchMostPopular(page, perPage, format);
+            break;
+
+          case 'favorite':
+            result = await jikan.fetchMostFavorite(page, perPage, format);
+            break;
+
+          case 'rating':
+            result = await jikan.fetchTopAnime(page, perPage, format);
+            break;
+
+          case 'airing':
+            result = await jikan.fetchTopAiring(page, perPage, format);
+            break;
+          case 'upcoming':
+            result = await jikan.fetchTopUpcoming(page, perPage, format);
+            break;
+        }
+
+        if ('error' in result) {
+          request.log.error({ result, page, perPage, format, category }, `External API Error: Failed to fetch anime`);
+          return reply.status(500).send(result);
+        }
+        if (result && Array.isArray(result.data) && result.data.length > 0) {
+          let duration;
+
+          category === 'airing' ? (duration = 12) : (duration = 168);
+
+          await redisSetCache(cacheKey, result, duration);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, `Internal runtime error occurred while fetching  anime list`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+      }
+    },
+  );
+
+  fastify.get('/anime/:id/characters', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+
+    const id = Number(request.params.id);
+
+    const cacheKey = `mal-characters-${id}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+    try {
+      const result = await jikan.fetchAnimeCharacters(id);
+
+      if ('error' in result) {
+        request.log.error({ result, id }, `External API Error: Failed to fetch next seasonal anime list`);
+        return reply.status(500).send(result);
+      }
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 720);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error: error }, `Internal runtime error occurred while fetching characters`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
+  fastify.get(
+    '/seasons/:season/:year?',
+    async (
+      request: FastifyRequest<{
+        Params: { season: Seasons | 'current' | 'upcoming'; year?: string };
+        Querystring: FastifyQuery;
+      }>,
+      reply: FastifyReply,
+    ) => {
       reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
 
-      const season = request.query.season as Seasons;
-      const year = Number(request.query.year);
-      const format = (request.query.format as IMetaFormat) || 'TV';
+      const { season, year } = request.params;
+      const format = (request.query.format as 'TV' | 'MOVIE' | 'SPECIAL' | 'OVA' | 'ONA' | 'MUSIC') || 'TV';
       const page = Number(request.query.page) || 1;
       let perPage = Number(request.query.perPage) || 20;
       perPage = Math.min(perPage, 25);
@@ -203,207 +203,152 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         });
       }
 
-      if (!season) {
+      const validSeasons = [...IAnimeSeasonsArr, 'current', 'upcoming'];
+      if (!validSeasons.includes(season)) {
         return reply.status(400).send({
-          error: "Missing required query parameter: 'season'.",
-        });
-      }
-      if (!IAnimeSeasonsArr.includes(season)) {
-        return reply.status(400).send({
-          error: `Invalid format: '${season}'. Expected one of ${IAnimeSeasonsArr.join(', ')}.`,
+          error: `Invalid season: '${season}'. Expected one of ${validSeasons.join(', ')}.`,
         });
       }
 
-      const cacheKey = `mal-seasons-${season}-${format}-${page}`;
+      if (season !== 'current' && season !== 'upcoming' && !year) {
+        return reply.status(400).send({ error: 'Missing required path parameter: year' });
+      }
+
+      const cacheKey = year ? `mal-seasons-${year}-${season}-${format}-${page}` : `mal-season-${season}-${format}-${page}`;
       const cachedData = await redisGetCache(cacheKey);
       if (cachedData) {
         return reply.status(200).send(cachedData);
       }
 
-      const result = await jikan.fetchSeasonalAnime(season, year, format, page, perPage);
-      if ('error' in result) {
-        return reply.status(500).send(result);
-      }
+      try {
+        let result;
+        if (season === 'current') {
+          result = await jikan.fetchCurrentSeason(page, perPage, format);
+        } else if (season === 'upcoming') {
+          result = await jikan.fetchNextSeason(page, perPage, format);
+        } else {
+          result = await jikan.fetchSeasonalAnime(season, Number(year), format, page, perPage);
+        }
 
-      if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 168);
-      }
+        if ('error' in result) {
+          request.log.error(
+            { result, page, perPage, season, year, format },
+            `External API Error: Failed to fetch seasonal anime list`,
+          );
+          return reply.status(500).send(result);
+        }
 
-      return reply.status(200).send(result);
+        if (result && Array.isArray(result.data) && result.data.length > 0) {
+          await redisSetCache(cacheKey, result, 168);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error }, `Internal runtime error occurred while fetching seasonal anime lists`);
+        return reply.status(500).send({ error: 'Internal server error occurred' });
+      }
     },
   );
 
-  fastify.get('/current-season', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const format = (request.query.format as IMetaFormat) || 'TV';
-    const page = Number(request.query.page) || 1;
-    let perPage = Number(request.query.perPage) || 20;
-    perPage = Math.min(perPage, 25);
-
-    if (!IAMetaFormatArr.includes(format)) {
-      return reply.status(400).send({
-        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
-      });
-    }
-    const cacheKey = `mal-seasons-current-season-${format}-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    const result = await jikan.fetchCurrentSeason(page, perPage, format);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/next-season', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
-
-    const format = (request.query.format as IMetaFormat) || 'TV';
-    const page = Number(request.query.page) || 1;
-    let perPage = Number(request.query.perPage) || 20;
-    perPage = Math.min(perPage, 25);
-
-    if (!IAMetaFormatArr.includes(format)) {
-      return reply.status(400).send({
-        error: `Invalid format: '${format}'. Expected one of ${IAMetaFormatArr.join(', ')}.`,
-      });
-    }
-    const cacheKey = `mal-seasons-next-season-${format}-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    const result = await jikan.fetchNextSeason(page, perPage, format);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/characters/:malId', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
-
-    const malId = Number(request.params.malId);
-
-    const cacheKey = `mal-characters-${malId}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-    const result = await jikan.fetchAnimeCharacters(malId);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 720);
-    }
-    return reply.status(200).send(result);
-  });
-
   fastify.get(
-    '/get-provider/:malId',
+    '/mappings/:id',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const malId = Number(request.params.malId);
+      const id = Number(request.params.id);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
 
-      if (!malId) {
+      if (!id) {
         return reply.status(400).send({
-          error: "Missing required path parameter: 'malId'.",
+          error: "Missing required path parameter: 'id'.",
         });
       }
-      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe' && provider !== 'anizone') {
+
+      if (!allowedProviders.includes(provider)) {
         return reply.status(400).send({
-          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe' or 'anizone'`,
+          error: `Invalid provider '${provider}'. Expected one of: ${allowedProviders.join(', ')}`,
         });
       }
 
       let duration;
-      const cacheKey = `mal-provider-id-${malId}-${provider}`;
+      const cacheKey = `mal-provider-id-${id}-${provider}`;
       const cachedData = await redisGetCache(cacheKey);
       if (cachedData) {
         return reply.status(200).send(cachedData);
       }
 
-      const result = await jikan.fetchProviderId(malId, provider);
+      try {
+        const result = await jikan.fetchProviderId(id, provider);
 
-      if ('error' in result) {
-        return reply.status(500).send(result);
-      }
+        if ('error' in result) {
+          request.log.error({ result, id, provider }, `External API Error: Failed to fetch provider info.`);
+          return reply.status(500).send(result);
+        }
 
-      if (result && result.data !== null && result.provider !== null && result.data.format.toLowerCase() !== 'movie') {
-        result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 148);
-        await redisSetCache(cacheKey, result, duration);
+        if (result && result.data !== null && result.provider !== null && result.data.format.toLowerCase() !== 'movie') {
+          result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 148);
+          await redisSetCache(cacheKey, result, duration);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, `Internal runtime error occurred while fetching provider info`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
       }
-      return reply.status(200).send(result);
     },
   );
 
   fastify.get(
-    '/provider-episodes/:malId',
+    '/episodes/:id',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const malId = Number(request.params.malId);
+      const id = Number(request.params.id);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
 
-      if (!malId) {
+      if (!id) {
         return reply.status(400).send({
-          error: "Missing required path parameter: 'malId'.",
+          error: "Missing required path parameter: 'id'.",
         });
       }
-      if (provider !== 'allanime' && provider !== 'hianime' && provider !== 'animepahe' && provider !== 'anizone') {
+      if (!allowedProviders.includes(provider)) {
         return reply.status(400).send({
-          error: `Invalid provider ${provider} .Expected provider query paramater to be  'allanime' or 'hianime'or 'animepahe' or 'anizone' `,
+          error: `Invalid provider '${provider}'. Expected one of: ${allowedProviders.join(', ')}`,
         });
       }
 
       let duration;
 
-      const cacheKey = `mal-provider-episodes-${malId}-${provider}`;
+      const cacheKey = `mal-provider-episodes-${id}-${provider}`;
       const cachedData = await redisGetCache(cacheKey);
       if (cachedData) {
         return reply.status(200).send(cachedData);
       }
 
-      const result = await jikan.fetchAnimeProviderEpisodes(malId, provider);
+      try {
+        const result = await jikan.fetchAnimeProviderEpisodes(id, provider);
 
-      if ('error' in result) {
-        return reply.status(500).send(result);
+        if ('error' in result) {
+          request.log.error({ result, id, provider }, `External API Error: Failed to fetch provider episodes.`);
+          return reply.status(500).send(result);
+        }
+        if (
+          result &&
+          result.data !== null &&
+          Array.isArray(result.providerEpisodes) &&
+          result.providerEpisodes.length > 0 &&
+          result.data.format.toLowerCase() !== 'movie'
+        ) {
+          result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 2);
+          await redisSetCache(cacheKey, result, duration);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, `Internal runtime error occurred while fetching provider episodes`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
       }
-      if (
-        result &&
-        result.data !== null &&
-        Array.isArray(result.providerEpisodes) &&
-        result.providerEpisodes.length > 0 &&
-        result.data.format.toLowerCase() !== 'movie'
-      ) {
-        result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 2);
-        await redisSetCache(cacheKey, result, duration);
-      }
-      return reply.status(200).send(result);
     },
   );
   fastify.get(
-    '/watch/:episodeId',
+    '/sources/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
       reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
 
@@ -412,7 +357,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
       const validCategories = ['sub', 'dub', 'raw'] as const;
       const validServers = ['hd-1', 'hd-2', 'hd-3'] as const;
 
-      const category = (request.query.category as string) || 'sub';
+      const version = request.query.version || 'sub';
       const server = (request.query.server as string) || 'hd-2';
 
       if (!episodeId) {
@@ -421,9 +366,9 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         });
       }
 
-      if (!validCategories.includes(category as any)) {
+      if (!validCategories.includes(version as any)) {
         return reply.status(400).send({
-          error: `Invalid category '${category}'. Expected one of ${validCategories.join(', ')}.`,
+          error: `Invalid version '${version}'. Expected one of ${validCategories.join(', ')}.`,
         });
       }
 
@@ -435,29 +380,35 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
         }
       }
 
-      let result;
+      try {
+        let result;
 
-      if (episodeId.includes('hianime')) {
-        result = await hianime.fetchSources(
-          episodeId,
-          server as (typeof validServers)[number],
-          category as (typeof validCategories)[number],
-        );
-      } else if (episodeId.includes('allanime')) {
-        result = await allanime.fetchSources(episodeId, category as (typeof validCategories)[number]);
-      } else if (episodeId.includes('pahe')) {
-        result = await animepahe.fetchSources(episodeId, category as (typeof validCategories)[number]);
-      } else if (episodeId.includes('anizone')) {
-        result = await anizone.fetchSources(episodeId);
-      } else
-        return reply.status(400).send({
-          error: `Unsupported  episodeId: '${episodeId}' Fetch the right episodeId from api/anilist/provider-episodes/:anilistId.`,
-        });
-      if ('error' in result) {
-        return reply.status(500).send(result);
+        if (episodeId.includes('hianime')) {
+          result = await hianime.fetchSources(
+            episodeId,
+            server as (typeof validServers)[number],
+            version as (typeof validCategories)[number],
+          );
+        } else if (episodeId.includes('allanime')) {
+          result = await allanime.fetchSources(episodeId, version as 'sub' | 'dub');
+        } else if (episodeId.includes('pahe')) {
+          result = await animepahe.fetchSources(episodeId, version as 'sub' | 'dub');
+        } else if (episodeId.includes('anizone')) {
+          result = await anizone.fetchSources(episodeId);
+        } else
+          return reply.status(400).send({
+            error: `Unsupported  episodeId: '${episodeId}' Fetch the right episodeId from api/jikan/episodes/:id.`,
+          });
+        if ('error' in result) {
+          request.log.error({ result, episodeId, version }, `External API Error: Failed to fetch sources`);
+          return reply.status(500).send(result);
+        }
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error: error }, `Internal runtime error occurred while fetching sources`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
       }
-
-      return reply.status(200).send(result);
     },
   );
 }

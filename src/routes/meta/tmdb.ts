@@ -7,407 +7,395 @@ import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
 const tmdb = new TheMovieDatabase();
 
 export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
-  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-    return reply.send({ message: 'Welcome to The TheMovieDatabase provider' });
-  });
-
-  fastify.get('/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  // Search movies or TV shows
+  fastify.get('/movies/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    const { q, page = 1 } = request.query;
+    if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
+    if (q.length > 1000) return reply.status(400).send({ error: 'Query string too long' });
 
-    const q = String(request.query.q);
-    const page = Number(request.query.page) || 1;
-    const type = request.query.type as 'movie' | 'tv';
-
-    if (!q.length) {
-      return reply.status(400).send({ error: "Missing required query params: 'q' " });
-    }
-    if (q.length > 1000) {
-      return reply.status(400).send({ error: 'query string too long' });
-    }
-
-    if (!type) {
-      return reply.status(400).send({
-        error: "Missing required query parameter: 'type'.",
-      });
-    }
-    if (type !== 'movie' && type !== 'tv') {
-      return reply.status(400).send({
-        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
-      });
-    }
-
-    let result;
-    type === 'movie' ? (result = await tmdb.searchMovie(q, page)) : (result = await tmdb.searchShows(q, page));
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    return reply.status(200).send(result);
-  });
-
-  fastify.get(
-    '/info/:mediaId',
-    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
-
-      const mediaId = Number(request.params.mediaId);
-      const type = request.query.type as 'movie' | 'tv';
-
-      if (!type) {
-        return reply.status(400).send({
-          error: "Missing required query parameter: 'type'.",
-        });
-      }
-      if (type !== 'movie' && type !== 'tv') {
-        return reply.status(400).send({
-          error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
-        });
-      }
-      const cacheKey = `tmdb-media-info-${mediaId}-${type}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.status(200).send(cachedData);
-      }
-      let result;
-      type === 'movie' ? (result = await tmdb.fetchMovieInfo(mediaId)) : (result = await tmdb.fetchShowInfo(mediaId));
-
+    try {
+      const result = await tmdb.searchMovie(q, page);
       if ('error' in result) {
+        request.log.error({ result, q, page }, `External API Error: Failed to fetch search results`);
         return reply.status(500).send(result);
       }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while querying search results`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
 
-      if (result && result.data !== null) {
-        await redisSetCache(cacheKey, result, 168);
+  fastify.get('/tv/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    const { q, page = 1 } = request.query;
+    if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
+    if (q.length > 1000) return reply.status(400).send({ error: 'Query string too long' });
+
+    try {
+      const result = await tmdb.searchShows(q, page);
+      if ('error' in result) {
+        request.log.error({ result, q, page }, `External API Error: Failed to fetch search results`);
+        return reply.status(500).send(result);
       }
-      if (result) return reply.status(200).send(result);
-    },
-  );
-
-  fastify.get('/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const type = request.query.type as 'movie' | 'tv';
-    const page = Number(request.query.page) || 1;
-    const timeWindow = (request.query.timeWindow as 'day' | 'week') || 'week';
-
-    if (!type) {
-      return reply.status(400).send({
-        error: "Missing required query parameter: 'type'.",
-      });
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while querying search results`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
-    if (type !== 'movie' && type !== 'tv') {
-      return reply.status(400).send({
-        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
-      });
-    }
-    if (timeWindow !== 'week' && timeWindow !== 'day') {
-      return reply.status(400).send({
-        error: `Invalid timeWindow: '${timeWindow}'. Expected 'day' or 'week'.`,
-      });
-    }
-
-    let duration;
-    timeWindow === 'week' ? (duration = 168) : (duration = 24);
-
-    const cacheKey = ` tmdb-trending-${type}-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    let result;
-    type === 'movie'
-      ? (result = await tmdb.fetchTrendingMovies(timeWindow, page))
-      : (result = await tmdb.fetchTrendingTv(timeWindow, page));
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, duration);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/popular', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const type = request.query.type as 'movie' | 'tv';
-    const page = Number(request.query.page) || 1;
-
-    if (!type) {
-      return reply.status(400).send({
-        error: "Missing required query parameter: 'type'.",
-      });
-    }
-    if (type !== 'movie' && type !== 'tv') {
-      return reply.status(400).send({
-        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
-      });
-    }
-    const cacheKey = ` tmdb-popular-${type}-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    let result;
-    type === 'movie' ? (result = await tmdb.fetchPopularMovies(page)) : (result = await tmdb.fetchPopularTv(page));
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/top', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const type = request.query.type as 'movie' | 'tv';
-    const page = Number(request.query.page) || 1;
-
-    if (!type) {
-      return reply.status(400).send({
-        error: "Missing required query parameter: 'type'.",
-      });
-    }
-    if (type !== 'movie' && type !== 'tv') {
-      return reply.status(400).send({
-        error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
-      });
-    }
-    const cacheKey = `tmdb-popular-${type}-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-
-    let result;
-    type === 'movie' ? (result = await tmdb.fetchTopMovies(page)) : (result = await tmdb.fetchTopShows(page));
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
   });
 
   fastify.get(
-    '/get-provider/:tmdbId',
+    '/movies/category/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const type = request.query.type as 'movie' | 'tv';
-      const tmdbId = request.params.tmdbId;
-      if (!tmdbId) {
-        return reply.status(400).send({
-          error: "Missing required path parameter: 'tmdbId'.",
-        });
-      }
-      if (!type) {
-        return reply.status(400).send({
-          error: "Missing required query parameter: 'type'.",
-        });
-      }
-      if (type !== 'movie' && type !== 'tv') {
-        return reply.status(400).send({
-          error: `Invalid type: '${type}'. Expected 'movie' or 'tv'.`,
-        });
-      }
-      const cacheKey = ` tmdb-provider-id-${type}-${tmdbId}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.status(200).send(cachedData);
-      }
-      let result;
-      type === 'movie'
-        ? (result = await tmdb.fetchMovieProviderId(tmdbId))
-        : (result = await tmdb.fetchTvProviderId(tmdbId));
+      const page = request.query.page || 1;
+      const category = request.params.category as 'popular' | 'top-rated' | 'releasing';
 
+      if (category !== 'popular' && category !== 'top-rated' && category !== 'releasing') {
+        return reply
+          .status(400)
+          .send({ error: `Invalid category: '${category}'. Expected 'popular' , 'top-rated' or 'releasing' ` });
+      }
+      const cacheKey = `tmdb-${category}-movie-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) return reply.status(200).send(cachedData);
+
+      try {
+        let result;
+        switch (category) {
+          case 'popular':
+            result = await tmdb.fetchPopularMovies(page);
+            break;
+
+          case 'top-rated':
+            result = await tmdb.fetchTopMovies(page);
+            break;
+
+          case 'releasing':
+            result = await tmdb.fetchReleasingMovies(page);
+            break;
+        }
+        if ('error' in result) {
+          request.log.error({ result, page, category }, `External API Error: Failed to fetch ${category} movies`);
+          return reply.status(500).send(result);
+        }
+        if (result && Array.isArray(result.data) && result.data.length > 0) {
+          await redisSetCache(cacheKey, result, 168);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error, page, category }, `Internal runtime error occurred while fetching ${category} movies`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+      }
+    },
+  );
+
+  fastify.get(
+    '/tv/category/:category',
+    async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+      const page = request.query.page || 1;
+      const category = request.params.category as 'popular' | 'top-rated' | 'airing';
+
+      if (category !== 'popular' && category !== 'top-rated' && category !== 'airing') {
+        return reply
+          .status(400)
+          .send({ error: `Invalid category: '${category}'. Expected 'popular' , 'top-rated' or 'airing'` });
+      }
+      const cacheKey = `tmdb-${category}-tv-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) return reply.status(200).send(cachedData);
+
+      try {
+        let result;
+        switch (category) {
+          case 'popular':
+            result = await tmdb.fetchPopularTv(page);
+            break;
+
+          case 'top-rated':
+            result = await tmdb.fetchTopShows(page);
+            break;
+
+          case 'airing':
+            result = await tmdb.fetchAiringTv(page);
+            break;
+        }
+        if ('error' in result) {
+          request.log.error({ result, page, category }, `External API Error: Failed to fetch ${category} tv`);
+          return reply.status(500).send(result);
+        }
+        if (result && Array.isArray(result.data) && result.data.length > 0) {
+          await redisSetCache(cacheKey, result, 168);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error, page, category }, `Internal runtime error occurred while fetching ${category} tv`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+      }
+    },
+  );
+
+  // Get movie or TV show details
+  fastify.get('/movies/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+
+    const id = request.params.id;
+    const cacheKey = `tmdb-media-info-movie-${id}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) return reply.status(200).send(cachedData);
+
+    try {
+      const result = await tmdb.fetchMovieInfo(Number(id));
       if ('error' in result) {
+        request.log.error({ result, id }, `External API Error: Failed to fetch media info`);
         return reply.status(500).send(result);
       }
+      if (result && result.data !== null) {
+        await redisSetCache(cacheKey, result, 168);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching media info`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
 
+  fastify.get('/tv/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+
+    const id = request.params.id;
+    const cacheKey = `tmdb-media-info-tv-${id}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) return reply.status(200).send(cachedData);
+
+    try {
+      const result = await tmdb.fetchShowInfo(Number(id));
+      if ('error' in result) {
+        request.log.error({ result, id }, `External API Error: Failed to fetch media info`);
+        return reply.status(500).send(result);
+      }
+      if (result && result.data !== null) {
+        await redisSetCache(cacheKey, result, 168);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching media info`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
+  fastify.get('/movies/:id/mappings', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const id = request.params.id;
+
+    const cacheKey = `tmdb-provider-id-movie-${id}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) return reply.status(200).send(cachedData);
+
+    try {
+      const result = await tmdb.fetchMovieProviderId(Number(id));
+      if ('error' in result) {
+        request.log.error({ result, id }, `External API Error: Failed to fetch provider info`);
+        return reply.status(500).send(result);
+      }
       if (result && result.data !== null && result.provider !== null) {
         await redisSetCache(cacheKey, result, 168);
       }
       return reply.status(200).send(result);
-    },
-  );
-
-  fastify.get('/airing-tv', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const page = Number(request.query.page) || 1;
-
-    const cacheKey = ` tmdb-airing-tv-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching provider info`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
-
-    const result = await tmdb.fetchAiringTv(page);
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
   });
 
-  fastify.get(
-    '/episodes/:tmdbId',
-    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+  fastify.get('/tv/:id/mappings', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const tmdbId = Number(request.params.tmdbId);
-      const season = Number(request.query.season);
-      if (!tmdbId) {
-        return reply.status(400).send({
-          error: "Missing required path parameter: 'tmdbId'.",
-        });
-      }
-      if (!season) {
-        return reply.status(400).send({
-          error: "Missing required query parameter: 'season'.",
-        });
-      }
-      const cacheKey = ` tmdb-episodes-tv-${tmdbId}-${season}`;
-      const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.status(200).send(cachedData);
-      }
+    const id = request.params.id;
 
-      const result = await tmdb.fetchTvEpisodes(tmdbId, season);
+    const cacheKey = `tmdb-provider-id-tv-${id}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) return reply.status(200).send(cachedData);
 
+    try {
+      const result = await tmdb.fetchTvProviderId(Number(id));
       if ('error' in result) {
+        request.log.error({ result, id }, `External API Error: Failed to fetch provider info`);
         return reply.status(500).send(result);
       }
+      if (result && result.data !== null && result.provider !== null) {
+        await redisSetCache(cacheKey, result, 168);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching provider info`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
 
+  // Get trending movies or TV shows
+  fastify.get('/movies/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const page = request.query.page || 1;
+    const timeWindow = request.query.timeWindow || 'week';
+
+    if (timeWindow !== 'week' && timeWindow !== 'day') {
+      return reply.status(400).send({ error: `Invalid timeWindow: '${timeWindow}'. Expected 'day' or 'week'` });
+    }
+    const duration = timeWindow === 'week' ? 168 : 24;
+    const cacheKey = `tmdb-trending-movie-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) return reply.status(200).send(cachedData);
+
+    try {
+      const result = await tmdb.fetchTrendingMovies(timeWindow, page);
+      if ('error' in result) {
+        request.log.error({ result, page, timeWindow }, `External API Error: Failed to fetch trending media`);
+        return reply.status(500).send(result);
+      }
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, duration);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching trending media`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
+
+  fastify.get('/tv/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+
+    const page = request.query.page || 1;
+    const timeWindow = request.query.timeWindow || 'week';
+
+    if (timeWindow !== 'week' && timeWindow !== 'day') {
+      return reply.status(400).send({ error: `Invalid timeWindow: '${timeWindow}'. Expected 'day' or 'week'` });
+    }
+    const duration = timeWindow === 'week' ? 168 : 24;
+    const cacheKey = `tmdb-trending-tv-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) return reply.status(200).send(cachedData);
+
+    try {
+      const result = await tmdb.fetchTrendingTv(timeWindow, page);
+      if ('error' in result) {
+        request.log.error({ result, page, timeWindow }, `External API Error: Failed to fetch trending media`);
+        return reply.status(500).send(result);
+      }
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, duration);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching trending media`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
+
+  // Get TV seasons and episodes
+  fastify.get('/tv/:id/seasons/:season', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+
+    const id = request.params.id;
+    const season = request.params.season;
+
+    const cacheKey = `tmdb-episodes-tv-${id}-${season}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) return reply.status(200).send(cachedData);
+
+    try {
+      const result = await tmdb.fetchTvEpisodes(Number(id), Number(season));
+
+      if ('error' in result) {
+        request.log.error({ result, id, season }, `External API Error: Failed to fetch seasonal tv episodes`);
+        return reply.status(500).send(result);
+      }
       if (result && Array.isArray(result.data) && result.data.length > 0) {
         await redisSetCache(cacheKey, result, 24);
       }
       return reply.status(200).send(result);
-    },
-  );
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching seasonal tv episodes`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+    }
+  });
 
   fastify.get(
-    '/episode-info/:tmdbId',
-    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    '/tv/:id/seasons/:season/episodes/:episode',
+    async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
-      const tmdbId = Number(request.params.tmdbId);
-      const season = Number(request.query.season);
-      const episodeNumber = Number(request.query.episode);
+      const id = request.params.id;
+      const season = request.params.season;
+      const episode = request.params.episode;
 
-      if (!episodeNumber) {
-        return reply.status(400).send({
-          error: "Missing required query parameter: 'episode'.",
-        });
-      }
-      if (!tmdbId) {
-        return reply.status(400).send({
-          error: "Missing required path parameter: 'tmdbId'.",
-        });
-      }
-      if (!season) {
-        return reply.status(400).send({
-          error: "Missing required query parameter: 'season'.",
-        });
-      }
-
-      const cacheKey = `tmdb-episode-info-${tmdbId}-${season}-${episodeNumber}`;
+      const cacheKey = `tmdb-episode-${id}-${season}-${episode}`;
       const cachedData = await redisGetCache(cacheKey);
-      if (cachedData) {
-        return reply.status(200).send(cachedData);
-      }
+      if (cachedData) return reply.status(200).send(cachedData);
 
-      const result = await tmdb.fetchEpisodeInfo(tmdbId, season, episodeNumber);
-      if ('error' in result) {
-        return reply.status(500).send(result);
+      try {
+        const result = await tmdb.fetchEpisodeInfo(Number(id), Number(season), Number(episode));
+        if ('error' in result) {
+          request.log.error({ result, id, season, episode }, `External API Error: Failed to fetch tv episodeInfo`);
+          return reply.status(500).send(result);
+        }
+        if (result && result.data !== null) {
+          await redisSetCache(cacheKey, result, 0);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error }, `Internal runtime error occurred while fetching tv episodeInfo`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
       }
-
-      if (result && result.data !== null) {
-        await redisSetCache(cacheKey, result, 0);
-      }
-      return reply.status(200).send(result);
     },
   );
 
-  fastify.get('/releasing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${48 * 60 * 60}, stale-while-revalidate=300`);
+  // Get streaming sources
+  fastify.get('/movies/:id/sources', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
+    reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
 
-    const page = Number(request.query.page) || 1;
+    const id = request.params.id;
 
-    const cacheKey = `tmdb-releasing-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
+    try {
+      const result = await tmdb.fetchMovieSources(Number(id));
+      if ('error' in result) {
+        request.log.error({ result, id }, `External API Error: Failed to fetch sources`);
+        return reply.status(500).send(result);
+      }
+      return reply.status(200).send(result);
+    } catch (error) {
+      request.log.error({ error }, `Internal runtime error occurred while fetching sources`);
+      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
     }
-
-    const result = await tmdb.fetchReleasingMovies(page);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
-  });
-
-  fastify.get('/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
-
-    const page = Number(request.query.page) || 1;
-
-    const cacheKey = `tmdb-upcoming-${page}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
-    const result = await tmdb.fetchUpcomingMovies(page);
-
-    if ('error' in result) {
-      return reply.status(500).send(result);
-    }
-
-    if (result && Array.isArray(result.data) && result.data.length > 0) {
-      await redisSetCache(cacheKey, result, 168);
-    }
-    return reply.status(200).send(result);
   });
 
   fastify.get(
-    '/watch/:tmdbId',
-    async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
+    '/tv/:id/seasons/:season/episodes/:episode/sources',
+    async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
 
-      const tmdbId = Number(request.params.tmdbId);
-      const seasonNumber = Number(request.query.season);
-      const episodeNumber = Number(request.query.episode);
+      const id = request.params.id;
+      const season = request.params.season;
+      const episode = request.params.episode;
 
-      let result;
-      seasonNumber && episodeNumber
-        ? (result = await tmdb.fetchTvSources(tmdbId, seasonNumber, episodeNumber))
-        : (result = await tmdb.fetchMovieSources(tmdbId));
-
-      if ('error' in result) {
-        return reply.status(500).send(result);
+      try {
+        const result = await tmdb.fetchTvSources(Number(id), Number(season), Number(episode));
+        if ('error' in result) {
+          request.log.error({ result, id, season, episode }, `External API Error: Failed to fetch sources`);
+          return reply.status(500).send(result);
+        }
+        return reply.status(200).send(result);
+      } catch (error) {
+        request.log.error({ error }, `Internal runtime error occurred while fetching sources`);
+        return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
       }
-
-      return reply.status(200).send(result);
     },
   );
 }

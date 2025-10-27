@@ -23,7 +23,7 @@
   "author": "middlegear",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/middlegear/kenjitsu/issues"
+    "url": "https://github.com/middlegear/kenjitsu-api/issues"
   },
   "homepage": "https://github.com/middlegear/kenjitsu#readme",
   "devDependencies": {

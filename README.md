@@ -5,8 +5,7 @@ It works as a wrapper for **kenjitsu-extensions** (scrapers), exposing them thro
 
 ## Features
 - 🚀 Fastify-based, high performance  
-- 📺 Anime, Movies, and TV endpoints  
-- 🔌 Powered by kenjitsu-extensions 
+- 📺 Anime, Movies, and TV endpoints
 - 🌐 JSON responses ready to consume in apps  
 
 ## Documentation

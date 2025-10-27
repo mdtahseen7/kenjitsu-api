@@ -1,31 +1,29 @@
 export interface FastifyParams {
-  tmdbId?: number;
-  animeId?: string;
-  anilistId?: number;
-  malId?: number;
+  id?: string;
   episodeId?: string;
-  mediaId?: string;
-  tvmazeId?: number;
   sort?: string;
   genre?: string;
   country?: string;
-}
-export interface FastifyQuery {
-  imdbId?: number;
-  tvdbId?: string;
+  season?: string;
+  episode?: number;
   year?: string;
+  status?: string;
+  category?: string;
+  format?: string;
+}
+
+export interface FastifyQuery {
   score?: string;
   q?: string;
+  sort?: string;
   type?: string;
   page?: number;
   perPage?: number;
   format?: string;
-  category?: string;
+  version?: string;
   server?: string;
   provider?: string;
   timeWindow?: string;
-  season?: string;
-  episode?: number;
   country?: string;
   genre?: string;
   quality?: string;
@@ -38,3 +36,7 @@ export const IAnimeCategoryArr = ['TV', 'MOVIE', 'SPECIALS', 'OVA', 'ONA'] as co
 export const IAnimeSeasonsArr = ['WINTER', 'SPRING', 'SUMMER', 'FALL'] as const;
 
 export const JSortArr = ['airing', 'bypopularity', 'upcoming', 'favorite', 'rating'] as const;
+
+export const allowedProviders = ['allanime', 'hianime', 'animepahe', 'anizone'];
+
+export const JikanList = ['favorite', 'popular', 'rating', 'airing', 'upcoming'] as const;
