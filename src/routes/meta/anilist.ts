@@ -227,35 +227,36 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/schedule/airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+  /// busted
+  // fastify.get('/schedule/airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  //   reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
-    const page = Number(request.query.page) || 1;
-    const score = Number(request.query.score) || 60;
+  //   const page = Number(request.query.page) || 1;
+  //   const score = Number(request.query.score) || 60;
 
-    const cacheKey = `anilist-schedule-${page}-${score}`;
-    const cachedData = await redisGetCache(cacheKey);
-    if (cachedData) {
-      return reply.status(200).send(cachedData);
-    }
+  //   const cacheKey = `anilist-schedule-${page}-${score}`;
+  //   const cachedData = await redisGetCache(cacheKey);
+  //   if (cachedData) {
+  //     return reply.status(200).send(cachedData);
+  //   }
 
-    try {
-      const result = await anilist.fetchAiringSchedule(page, score);
-      if ('error' in result) {
-        request.log.error({ result, page, score }, `External API Error: Failed to fetch airing schedule.`);
-        return reply.status(500).send(result);
-      }
+  //   try {
+  //     const result = await anilist.fetchAiringSchedule(page, score);
+  //     if ('error' in result) {
+  //       request.log.error({ result, page, score }, `External API Error: Failed to fetch airing schedule.`);
+  //       return reply.status(500).send(result);
+  //     }
 
-      if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 6);
-      }
+  //     if (result && Array.isArray(result.data) && result.data.length > 0) {
+  //       await redisSetCache(cacheKey, result, 6);
+  //     }
 
-      return reply.status(200).send(result);
-    } catch (error) {
-      request.log.error({ error: error }, `Internal runtime error occurred while fetching airing schedule`);
-      return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
-    }
-  });
+  //     return reply.status(200).send(result);
+  //   } catch (error) {
+  //     request.log.error({ error: error }, `Internal runtime error occurred while fetching airing schedule`);
+  //     return reply.status(500).send({ error: `Internal server error occurred: ${error}` });
+  //   }
+  // });
 
   fastify.get('/schedule/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
@@ -281,7 +282,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
       }
 
       if (result && result.data !== null) {
-        await redisSetCache(cacheKey, result, 12);
+        await redisSetCache(cacheKey, result, 24);
       }
 
       return reply.status(200).send(result);
@@ -358,7 +359,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/mappings/:id',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${4 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
 
       const id = Number(request.params.id);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
@@ -443,7 +444,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
           result.providerEpisodes.length > 0 &&
           result.data.format.toLowerCase() !== 'movie'
         ) {
-          result.data.status.toLowerCase() === 'finished' ? (duration = 0) : (duration = 2);
+          result.data.status.toLowerCase() === 'finished' ? (duration = 168) : (duration = 2);
           await redisSetCache(cacheKey, result, duration);
         }
         return reply.status(200).send(result);
@@ -457,7 +458,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
 
       const episodeId = String(request.params.episodeId);
 

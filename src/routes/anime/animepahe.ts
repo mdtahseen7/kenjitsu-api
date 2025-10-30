@@ -88,7 +88,7 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/:id/episodes', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -111,7 +111,7 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
         return reply.status(500).send(result);
       }
       if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 24);
+        await redisSetCache(cacheKey, result, 12);
       }
       return reply.status(200).send(result);
     } catch (error) {
@@ -160,7 +160,7 @@ export default async function AnimepaheRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
       const episodeId = request.params.episodeId;
 

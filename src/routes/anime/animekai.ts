@@ -63,7 +63,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
           .status(400)
           .send({ error: `Invalid path parameter status: '${status}'. Expected ''completed' , 'added' or 'updated'.` });
       }
-      const cacheKey = `animekai-recent-${status}-{-${page}`;
+      const cacheKey = `animekai-recent-${status}-${page}`;
       const cachedData = await redisGetCache(cacheKey);
       if (cachedData) {
         return reply.status(200).send(cachedData);
@@ -88,7 +88,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
           return reply.status(500).send(result);
         }
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 2);
+          await redisSetCache(cacheKey, result, 1);
         }
         return reply.status(200).send(result);
       } catch (error) {
@@ -101,7 +101,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/format/:format',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const format = request.params.format as IAnimeCategory;
@@ -114,12 +114,22 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       if (!format) {
         return reply.status(400).send({ error: 'Missing required path paramater: format' });
       }
+      const cacheKey = `animekai-format-${format}-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       try {
         const result = await animekai.fetchAnimeCategory(format, page);
 
         if ('error' in result) {
           request.log.error({ result, format, page }, `External API Error: Failed to fetch anime format`);
           return reply.status(500).send(result);
+        }
+
+        if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+          await redisSetCache(cacheKey, result, 48);
         }
 
         return reply.status(200).send(result);
@@ -131,7 +141,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/anime/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
     const format = (request.query.format as IMetaFormat) || 'TV';
     const page = request.query.page || 1;
@@ -142,11 +152,21 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
       });
     }
 
+    const cacheKey = `animekai-airing-${format}-${page}`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     try {
       const result = await animekai.fetchTopAiring(format, page);
       if ('error' in result) {
         request.log.error({ result, format, page }, `External API Error: Failed to fetch top airing anime`);
         return reply.status(500).send(result);
+      }
+
+      if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+        await redisSetCache(cacheKey, result, 24);
       }
 
       return reply.status(200).send(result);
@@ -169,6 +189,13 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
           error: "Missing required path parameter: 'genre'.",
         });
       }
+
+      const cacheKey = `animekai-genre-${page}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
+
       try {
         const result = await animekai.fetchGenres(genre, page);
 
@@ -176,7 +203,9 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
           request.log.error({ result }, `External API Error: Failed to fetch genre`);
           return reply.status(500).send(result);
         }
-
+        if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+          await redisSetCache(cacheKey, result, 168);
+        }
         return reply.status(200).send(result);
       } catch (error) {
         request.log.error({ error: error }, 'Internal runtime error occurred while fetching genres');
@@ -252,7 +281,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
     },
   );
   fastify.get(
-    '/episode/:episodeId/embed-servers',
+    '/episode/:episodeId/embed',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
       reply.header('Cache-Control', 's-maxage=420, stale-while-revalidate=180');
 

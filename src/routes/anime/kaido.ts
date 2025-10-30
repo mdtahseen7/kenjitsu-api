@@ -8,12 +8,21 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get('/home', async (request: FastifyRequest, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
+    const cacheKey = `kaido-home`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
+
     try {
       const result = await zoro.fetchHome();
 
       if ('error' in result) {
         request.log.error({ result }, `External API Error`);
         return reply.status(500).send(result);
+      }
+      if (result && result.data.length > 0 && result.mostPopular.length > 0) {
+        await redisSetCache(cacheKey, result, 12);
       }
 
       return reply.status(200).send(result);
@@ -286,7 +295,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const cacheKey = `kaido-category-${format}-${page}`;
+      const cacheKey = `kaido-format-${format}-${page}`;
       const cachedData = await redisGetCache(cacheKey);
       if (cachedData) {
         return reply.status(200).send(cachedData);
@@ -386,7 +395,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/episode/:episodeId/servers',
     async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const episodeId = String(request.params.episodeId);
       if (!episodeId) {

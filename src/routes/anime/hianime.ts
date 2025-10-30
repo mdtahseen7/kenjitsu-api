@@ -6,7 +6,13 @@ const zoro = new HiAnime();
 
 export default async function hianimeRoutes(fastify: FastifyInstance) {
   fastify.get('/home', async (request: FastifyRequest, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
+
+    const cacheKey = `hianime-home`;
+    const cachedData = await redisGetCache(cacheKey);
+    if (cachedData) {
+      return reply.status(200).send(cachedData);
+    }
 
     try {
       const result = await zoro.fetchHome();
@@ -14,6 +20,10 @@ export default async function hianimeRoutes(fastify: FastifyInstance) {
       if ('error' in result) {
         request.log.error({ result }, `External API Error`);
         return reply.status(500).send(result);
+      }
+
+      if (result && result.data.length > 0 && result.mostPopular.length > 0) {
+        await redisSetCache(cacheKey, result, 12);
       }
 
       return reply.status(200).send(result);
@@ -109,7 +119,7 @@ export default async function hianimeRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/category/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const category = request.params.category as 'subbed' | 'dubbed' | 'favourites' | 'popular' | 'airing';
@@ -154,6 +164,7 @@ export default async function hianimeRoutes(fastify: FastifyInstance) {
           request.log.error({ result, page, category }, `External API Error`);
           return reply.status(500).send(result);
         }
+
         if (result && Array.isArray(result.data) && result.data.length > 0) {
           let duration;
           category === 'airing' ? (duration = 12) : (duration = 168);
@@ -252,6 +263,7 @@ export default async function hianimeRoutes(fastify: FastifyInstance) {
         if (result && Array.isArray(result.data) && result.data.length > 0) {
           await redisSetCache(cacheKey, result, 168);
         }
+
         return reply.status(200).send(result);
       } catch (error) {
         request.log.error({ error: error }, `Internal runtime error occurred`);
@@ -367,7 +379,7 @@ export default async function hianimeRoutes(fastify: FastifyInstance) {
       }
 
       if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 1);
+        await redisSetCache(cacheKey, result, 2);
       }
       return reply.status(200).send(result);
     } catch (error) {
@@ -402,7 +414,7 @@ export default async function hianimeRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 24);
+          await redisSetCache(cacheKey, result, 48);
         }
 
         return reply.status(200).send(result);

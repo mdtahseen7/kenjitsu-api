@@ -90,7 +90,7 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const episodeId = request.params.episodeId;
 
@@ -99,12 +99,21 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
           error: `Missing required path paramater: 'episodeId'`,
         });
       }
+      const cacheKey = `anizone-sources-${episodeId}`;
+      const cachedData = await redisGetCache(cacheKey);
+      if (cachedData) {
+        return reply.status(200).send(cachedData);
+      }
 
       try {
         const result = await anizone.fetchSources(episodeId);
         if ('error' in result) {
           request.log.error({ result, episodeId }, `External API Error: Failed to fetch sources`);
           return reply.status(500).send(result);
+        }
+
+        if (result.data && Array.isArray(result.data.sources) && result.data.sources.length > 0) {
+          redisSetCache(cacheKey, result, 48);
         }
 
         return reply.status(200).send(result);

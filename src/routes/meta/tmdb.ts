@@ -99,7 +99,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
           let duration;
-          category === 'releasing' ? (duration = 12) : (duration = 168);
+          category === 'releasing' ? (duration = 72) : (duration = 720);
           await redisSetCache(cacheKey, result, duration);
         }
 
@@ -157,7 +157,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
           let duration;
-          category === 'airing' ? (duration = 12) : (duration = 168);
+          category === 'airing' ? (duration = 24) : (duration = 720);
           await redisSetCache(cacheKey, result, duration);
         }
         return reply.status(200).send(result);
@@ -298,7 +298,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     if (timeWindow !== 'week' && timeWindow !== 'day') {
       return reply.status(400).send({ error: `Invalid timeWindow: '${timeWindow}'. Expected 'day' or 'week'` });
     }
-    const duration = timeWindow === 'week' ? 168 : 24;
+    const duration = timeWindow === 'week' ? 336 : 24;
     const cacheKey = `tmdb-trending-movie-${page}`;
 
     const cachedData = await redisGetCache(cacheKey);
@@ -332,7 +332,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     if (timeWindow !== 'week' && timeWindow !== 'day') {
       return reply.status(400).send({ error: `Invalid timeWindow: '${timeWindow}'. Expected 'day' or 'week'` });
     }
-    const duration = timeWindow === 'week' ? 168 : 24;
+    const duration = timeWindow === 'week' ? 336 : 24;
     const cacheKey = `tmdb-trending-tv-${page}`;
     const cachedData = await redisGetCache(cacheKey);
     if (cachedData) return reply.status(200).send(cachedData);
@@ -381,7 +381,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
         return reply.status(500).send(result);
       }
       if (result && Array.isArray(result.data) && result.data.length > 0) {
-        await redisSetCache(cacheKey, result, 24);
+        await redisSetCache(cacheKey, result, 168);
       }
       return reply.status(200).send(result);
     } catch (error) {

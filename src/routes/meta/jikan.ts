@@ -360,7 +360,7 @@ export default async function JikanRoutes(fastify: FastifyInstance) {
           result.providerEpisodes.length > 0 &&
           result.data.format.toLowerCase() !== 'movie'
         ) {
-          result.data.status.toLowerCase() === 'finished airing' ? (duration = 0) : (duration = 1);
+          result.data.status.toLowerCase() === 'finished airing' ? (duration = 168) : (duration = 1);
           await redisSetCache(cacheKey, result, duration);
         }
         return reply.status(200).send(result);

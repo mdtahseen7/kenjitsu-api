@@ -24,7 +24,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
       }
 
       if (result && Array.isArray(result.upcoming) && result.upcoming.length > 0) {
-        await redisSetCache(cacheKey, result, 48);
+        await redisSetCache(cacheKey, result, 336);
       }
       return reply.status(200).send(result);
     } catch (error) {
@@ -34,7 +34,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/media/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const { q, page = 1 } = request.query;
     if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
@@ -55,7 +55,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/media/suggestions', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const q = request.query.q;
     if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
@@ -119,7 +119,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 168);
+          await redisSetCache(cacheKey, result, 336);
         }
 
         return reply.status(200).send(result);
@@ -175,7 +175,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 168);
+          await redisSetCache(cacheKey, result, 336);
         }
 
         return reply.status(200).send(result);
@@ -256,7 +256,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 720);
+          await redisSetCache(cacheKey, result, 336);
         }
         return reply.status(200).send(result);
       } catch (error) {
@@ -292,7 +292,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
           return reply.status(500).send(result);
         }
 
-        if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 1) {
+        if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
           await redisSetCache(cacheKey, result, 168);
         }
         return reply.status(200).send(result);

@@ -24,7 +24,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
       }
 
       if (result && Array.isArray(result.upcoming) && result.upcoming.length > 0) {
-        await redisSetCache(cacheKey, result, 48);
+        await redisSetCache(cacheKey, result, 168);
       }
       return reply.status(200).send(result);
     } catch (error) {
@@ -122,7 +122,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 168);
+          await redisSetCache(cacheKey, result, 336);
         }
 
         return reply.status(200).send(result);
@@ -177,7 +177,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 168);
+          await redisSetCache(cacheKey, result, 336);
         }
 
         return reply.status(200).send(result);
@@ -294,7 +294,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
           return reply.status(500).send(result);
         }
 
-        if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 1) {
+        if (result && result.data !== null && Array.isArray(result.providerEpisodes) && result.providerEpisodes.length > 0) {
           await redisSetCache(cacheKey, result, 168);
         }
         return reply.status(200).send(result);
@@ -334,7 +334,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 336);
+          await redisSetCache(cacheKey, result, 720);
         }
         return reply.status(200).send(result);
       } catch (error) {
@@ -406,7 +406,7 @@ export default async function FlixHQRoutes(fastify: FastifyInstance) {
         }
 
         if (result && Array.isArray(result.data) && result.data.length > 0) {
-          await redisSetCache(cacheKey, result, 148);
+          await redisSetCache(cacheKey, result, 168);
         }
         return reply.status(200).send(result);
       } catch (error) {
