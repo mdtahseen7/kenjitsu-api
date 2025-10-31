@@ -27,7 +27,7 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get('/anime/updates', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
+  fastify.get('/anime/recent', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
     reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     try {
