@@ -68,6 +68,7 @@ async function FastifyApp() {
   await checkRedis();
   await app.register(fastifyCors, corsOptions);
   await app.register(StaticRoutes);
+
   await app.register(AnilistRoutes, { prefix: '/api/anilist' });
   await app.register(JikanRoutes, { prefix: '/api/jikan' });
   // await app.register(AnimekaiRoutes, { prefix: '/api/animekai' });
