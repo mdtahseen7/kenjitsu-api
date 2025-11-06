@@ -2,6 +2,7 @@ import { Animekai, type IAnimeCategory, type IMetaFormat } from '@middlegear/ken
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { IAMetaFormatArr, IAnimeCategoryArr, type FastifyParams, type FastifyQuery } from '../../utils/types.js';
 import { redisGetCache, redisSetCache } from '../../middleware/cache.js';
+import { splitEpisodes } from '../../utils/cache.js';
 
 const animekai = new Animekai('https://animekai.to');
 
@@ -243,10 +244,33 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
         result.providerEpisodes.length > 0 &&
         result.data.type?.toLowerCase() !== 'movie'
       ) {
-        result.data.status?.toLowerCase() === 'completed' ? (duration = 0) : (duration = 1);
+        const { sub, dub } = splitEpisodes(result.providerEpisodes);
+        const status = (result.data.status ?? '').toLowerCase();
+
+        let duration: number; // in hours
+
+        if (status === 'completed') {
+          const subMatchesDub = sub.length > 0 && sub.length === dub.length && sub.every((n, i) => n === dub[i]);
+          const dubMatchesSub = dub.length > 0 && dub.length === sub.length && dub.every((n, i) => n === sub[i]);
+
+          const onlySub = sub.length > 0 && dub.length === 0;
+          const onlyDub = dub.length > 0 && sub.length === 0;
+
+          const fullySynced = subMatchesDub || dubMatchesSub;
+          const hasOnlyOneLang = onlySub || onlyDub;
+
+          if (fullySynced || hasOnlyOneLang) {
+            duration = 0;
+          } else {
+            duration = 168;
+          }
+        } else {
+          duration = 1;
+        }
 
         await redisSetCache(cacheKey, result, duration);
       }
+
       return reply.status(200).send(result);
     } catch (error) {
       request.log.error({ error: error }, 'Internal runtime error occurred fetching animeinfo');
