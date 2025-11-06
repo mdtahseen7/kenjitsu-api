@@ -14,7 +14,7 @@ export default async function StaticRoutes(fastify: FastifyInstance) {
     root: publicDir,
     prefix: '/',
     setHeaders: (res, filePath) => {
-      res.setHeader('Cache-Control', 's-maxage=31536000, immutable');
+      res.setHeader('Cache-Control', 'public, s-maxage=31536000, immutable');
     },
   });
 

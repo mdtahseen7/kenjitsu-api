@@ -7,7 +7,7 @@ const himovies = new HiMovies();
 
 export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get('/home', async (request: FastifyRequest, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const cacheKey = `himovies-home`;
     const cachedData = await redisGetCache(cacheKey);
@@ -34,7 +34,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/media/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const { q, page = 1 } = request.query;
     if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
@@ -55,7 +55,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/media/suggestions', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const q = request.query.q;
     if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
@@ -77,7 +77,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/movies/category/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const category = request.params.category as 'popular' | 'top-rated';
       const page = request.query.page || 1;
@@ -132,7 +132,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/tv/category/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const category = request.params.category as 'popular' | 'top-rated';
       const page = request.query.page || 1;
@@ -186,7 +186,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
     },
   );
   fastify.get('/media/upcoming', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = request.query.page || 1;
 
@@ -218,7 +218,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/media/filter',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
       const genre = request.query.genre || 'all';
       const country = request.query.country || 'all';
@@ -269,7 +269,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/media/:id',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${72 * 60 * 60}, stale-while-revalidate=300`);
 
       const mediaId = request.params.id;
 
@@ -306,7 +306,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/genres/:genre',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const genre = request.params.genre as IMovieGenre | undefined;
       const page = request.query.page || 1;
@@ -345,7 +345,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/countries/:country',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = request.query.page || 1;
       const country = request.params.country as IMovieCountry;
@@ -382,7 +382,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/media/:episodeId/servers',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const episodeId = request.params.episodeId;
       if (!episodeId) {
@@ -418,7 +418,7 @@ export default async function himoviesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=1200, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=1200, stale-while-revalidate=300`);
 
       const episodeId = request.params.episodeId;
       const server = (request.query.server as 'megacloud' | 'akcloud' | 'upcloud') || 'megacloud';

@@ -8,7 +8,7 @@ const tmdb = new TheMovieDatabase();
 
 export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get('/movies/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const { q, page = 1 } = request.query;
 
@@ -31,7 +31,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/tv/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
     const { q, page = 1 } = request.query;
 
     if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
@@ -55,7 +55,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/movies/category/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = request.query.page || 1;
       const category = request.params.category as 'popular' | 'top-rated' | 'releasing';
@@ -114,7 +114,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/tv/category/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = request.query.page || 1;
       const category = request.params.category as 'popular' | 'top-rated' | 'airing';
@@ -169,7 +169,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/movies/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -198,7 +198,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/tv/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -226,7 +226,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
     }
   });
   fastify.get('/movies/:id/mappings', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -258,7 +258,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/tv/:id/mappings', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -290,7 +290,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/movies/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = request.query.page || 1;
     const timeWindow = request.query.timeWindow || 'week';
@@ -324,7 +324,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/tv/trending', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
     const page = request.query.page || 1;
     const timeWindow = request.query.timeWindow || 'week';
@@ -357,7 +357,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/tv/:id/seasons/:season', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
     const season = request.params.season;
@@ -393,7 +393,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/tv/:id/seasons/:season/episodes/:episode',
     async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const id = request.params.id;
       const season = request.params.season;
@@ -433,7 +433,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/movies/:id/sources', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
+    reply.header('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=60');
 
     const id = request.params.id;
 
@@ -457,7 +457,7 @@ export default async function TheMovieDatabaseRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/tv/:id/seasons/:season/episodes/:episode/sources',
     async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
+      reply.header('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=60');
 
       const id = request.params.id;
       const season = request.params.season;

@@ -25,7 +25,7 @@ const animepahe = new Animepahe();
 
 export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get('/anime/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${148 * 60 * 60}, stale-while-revalidate=300`);
 
     const { q, page = 1 } = request.query;
     if (!q) return reply.status(400).send({ error: "Missing required query parameter: 'q'" });
@@ -49,7 +49,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
     let duration;
     const id = Number(request.params.id);
@@ -86,7 +86,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/top/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       let perPage = Number(request.query.perPage) || 20;
@@ -159,7 +159,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/anime/:id/characters', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -194,7 +194,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/:id/related', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -229,7 +229,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
 
   /// busted
   // fastify.get('/schedule/airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-  //   reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+  //   reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
   //   const page = Number(request.query.page) || 1;
   //   const score = Number(request.query.score) || 60;
@@ -259,7 +259,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   // });
 
   fastify.get('/schedule/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -295,7 +295,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/seasons/:season/:year',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
       const season = request.params.season as Seasons;
       const year = Number(request.params.year);
@@ -359,7 +359,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/mappings/:id',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${6 * 60 * 60}, stale-while-revalidate=300`);
 
       const id = Number(request.params.id);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
@@ -405,7 +405,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/episodes/:id',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
       const id = Number(request.params.id);
       const provider = (request.query.provider as 'allanime' | 'hianime' | 'animepahe' | 'anizone') || 'hianime';
@@ -458,7 +458,7 @@ export default async function AnilistRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=60');
+      reply.header('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=60');
 
       const episodeId = String(request.params.episodeId);
 

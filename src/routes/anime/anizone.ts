@@ -7,7 +7,7 @@ const anizone = new Anizone();
 
 export default async function AnizoneRoutes(fastify: FastifyInstance) {
   fastify.get('/anime/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
+    reply.header('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=300');
     const { q } = request.query;
     if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
     if (q.length > 1000) return reply.status(400).send({ error: 'Query string too long' });
@@ -28,7 +28,7 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/recent', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     try {
       const result = await anizone.fetchUpdates();
@@ -45,7 +45,7 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${2 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${2 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -90,7 +90,7 @@ export default async function AnizoneRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const episodeId = request.params.episodeId;
 

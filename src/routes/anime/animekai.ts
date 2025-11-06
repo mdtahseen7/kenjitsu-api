@@ -8,7 +8,7 @@ const animekai = new Animekai('https://animekai.to');
 
 export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get('/home', async (request: FastifyRequest, reply: FastifyReply) => {
-    reply.header('Cache-Control', 's-maxage=3600, stale-while-revalidate=300');
+    reply.header('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=300');
 
     try {
       const result = await animekai.fetchHome();
@@ -26,7 +26,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', 's-maxage=86400, stale-while-revalidate=300');
+    reply.header('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=300');
 
     const { q, page = 1 } = request.query;
     if (!q) return reply.status(400).send({ error: "Missing required query parameter: 'q'" });
@@ -48,7 +48,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/recent/:status',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = request.query.page || 1;
       const status = request.params.status as 'completed' | 'added' | 'updated';
@@ -102,7 +102,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/format/:format',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const format = request.params.format as IAnimeCategory;
@@ -142,7 +142,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/anime/top-airing', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
     const format = (request.query.format as IMetaFormat) || 'TV';
     const page = request.query.page || 1;
@@ -180,7 +180,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/genre/:genre',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${24 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const genre = request.params.genre;
@@ -216,7 +216,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/anime/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${0.5 * 60 * 60}, stale-while-revalidate=300`);
 
     let duration;
     const id = request.params.id;
@@ -281,7 +281,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/episode/:episodeId/servers',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=420, stale-while-revalidate=180');
+      reply.header('Cache-Control', 'public, s-maxage=420, stale-while-revalidate=180');
 
       const episodeId = String(request.params.episodeId);
 
@@ -307,7 +307,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/episode/:episodeId/embed',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=420, stale-while-revalidate=180');
+      reply.header('Cache-Control', 'public, s-maxage=420, stale-while-revalidate=180');
 
       const episodeId = String(request.params.episodeId);
       const version = (request.query.version as 'sub' | 'dub' | 'raw') || 'sub';
@@ -346,7 +346,7 @@ export default async function AnimekaiRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=600, stale-while-revalidate=180');
+      reply.header('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=180');
 
       const episodeId = String(request.params.episodeId);
       const version = (request.query.version as 'sub' | 'dub' | 'raw') || 'sub';

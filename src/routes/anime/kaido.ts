@@ -6,7 +6,7 @@ const zoro = new Kaido();
 
 export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get('/home', async (request: FastifyRequest, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const cacheKey = `kaido-home`;
     const cachedData = await redisGetCache(cacheKey);
@@ -33,7 +33,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/search', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
     const { q, page = 1 } = request.query;
     if (!q) return reply.status(400).send({ error: "Missing required query param: 'q'" });
@@ -55,7 +55,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/suggestions', async (request: FastifyRequest<{ Querystring: FastifyQuery }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     let q = request.query.q?.trim() ?? '';
     q = decodeURIComponent(q);
@@ -84,7 +84,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/anime/:id', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = request.params.id;
 
@@ -125,7 +125,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/category/:category',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const category = request.params.category as 'subbed' | 'dubbed' | 'favourites' | 'popular' | 'airing';
@@ -187,7 +187,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/recent/:status',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
       const status = request.params.status as 'completed' | 'added' | 'updated';
       const page = Number(request.query.page) || 1;
@@ -241,7 +241,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/az-list/:sort',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const sort = String(request.params.sort);
@@ -279,7 +279,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/format/:format',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${168 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const format = request.params.format as IAnimeCategory;
@@ -322,7 +322,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/anime/genre/:genre',
     async (request: FastifyRequest<{ Querystring: FastifyQuery; Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${48 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${48 * 60 * 60}, stale-while-revalidate=300`);
 
       const page = Number(request.query.page) || 1;
       const genre = request.params.genre as HIGenre;
@@ -358,7 +358,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   );
 
   fastify.get('/anime/:id/episodes', async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-    reply.header('Cache-Control', `s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
+    reply.header('Cache-Control', `public, s-maxage=${1 * 60 * 60}, stale-while-revalidate=300`);
 
     const id = String(request.params.id);
 
@@ -395,7 +395,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/episode/:episodeId/servers',
     async (request: FastifyRequest<{ Params: FastifyParams }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', `s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
+      reply.header('Cache-Control', `public, s-maxage=${12 * 60 * 60}, stale-while-revalidate=300`);
 
       const episodeId = String(request.params.episodeId);
       if (!episodeId) {
@@ -432,7 +432,7 @@ export default async function KaidoRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/sources/:episodeId',
     async (request: FastifyRequest<{ Params: FastifyParams; Querystring: FastifyQuery }>, reply: FastifyReply) => {
-      reply.header('Cache-Control', 's-maxage=900, stale-while-revalidate=60');
+      reply.header('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=60');
 
       const episodeId = String(request.params.episodeId);
       const version = (request.query.version as 'sub' | 'dub' | 'raw') || 'sub';
