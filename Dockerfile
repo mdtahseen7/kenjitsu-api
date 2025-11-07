@@ -8,18 +8,20 @@ WORKDIR /app
 # Copy dependency manifests and .npmrc
 COPY package*.json tsconfig.json .npmrc ./
 
-# Pass GitHub token for private package installs
+# Configure npm for GitHub Packages
 ARG NPM_TOKEN
 RUN if [ -n "$NPM_TOKEN" ]; then \
       npm config set //npm.pkg.github.com/:_authToken=$NPM_TOKEN; \
     fi
 
-# Install dependencies and build TypeScript
-RUN npm install && npm run build
+# Install dependencies
+RUN npm install
 
-# Copy the rest of the project
+
 COPY . .
 
+# Build TypeScript
+RUN npm run build
 # ==========================================
 #  Runtime Stage
 # ==========================================
